@@ -1,18 +1,32 @@
 <?php
 
-new SSLCertificateVerify();
-
-class SSLCertificateVerify
+abstract class SSLCertificateCommon implements JsonSerializable
 {
-	private int $time = 0;
+	protected array $messages = [];
 
-	private array $json = [
-		'result' => [
-			'value' => 'invalid',
-			'message' => '',
-		],
-		'chain' => [],
-	];
+	public function get_last_error(): string
+	{
+		if ($length = count($this->messages)) {
+			return $this->messages[$length - 1];
+		} else {
+			return '';
+		}
+	}
+
+	public function jsonSerialize(): mixed
+	{
+	}
+}
+
+class SSLCertificate extends SSLCertificateCommon
+{
+	protected string $pem;
+	protected array $x509;
+
+	public readonly string $subject;
+	public readonly string $issuer;
+	public readonly int $not_before;
+	public readonly int $not_after;
 
 	private function array_to_string(array $array): string
 	{
@@ -26,132 +40,252 @@ class SSLCertificateVerify
 		return implode( ', ', $result);
 	}
 
-	private function pem_to_cert(string $pem): array
+	public function __construct(string $pem)
 	{
-		$x509 = openssl_x509_parse($pem);
-		return [
-			'subject' => $this->array_to_string($x509['subject']),
-			'issuer' => $this->array_to_string($x509['issuer']),
-			'not_before' => [
-				'timestamp' => intval($x509['validFrom_time_t']),
-			],
-			'not_after' => [
-				'timestamp' => intval($x509['validTo_time_t']),
-			],
-		];
+		$this->pem = $pem;
+		$this->x509 = openssl_x509_parse($this->pem);
+
+		$this->subject = $this->array_to_string($this->x509['subject']);
+		$this->issuer = $this->array_to_string($this->x509['issuer']);
+		$this->not_before = intval($this->x509['validFrom_time_t']);
+		$this->not_after = intval($this->x509['validTo_time_t']);
 	}
 
-	private function cert_is_valid(array $cert): bool
+	public function is_valid(): bool
 	{
-		return ($cert['not_before']['timestamp'] < $this->time && $this->time < $cert['not_after']['timestamp']);
+		$time = time();
+		return ($this->not_before < $time && $time < $this->not_after);
 	}
 
-	private function pem_signed_by_issuer(string $pem, string $signed_pem): bool
+	public function is_signed_by(self $signed_cert): bool
 	{
-		$x509 = openssl_x509_parse($pem);
-		$signed_x509 = openssl_x509_parse($signed_pem);
-		return ($this->array_to_string($x509['issuer']) === $this->array_to_string($signed_x509['subject']));
+		return $this->issuer === $signed_cert->subject;
 	}
 
-	private function loadCertificates(string $filePath): bool|array
+	public function is_self_signed(): bool
 	{
-		if (empty($filePath)) {
-			$this->json['result']['message'] = 'Certificate file is not specified';
-			return false;
-		} elseif (! is_file($filePath)) {
-			$this->json['result']['message'] = 'Certificate file does not exist';
-			return false;
-		} elseif (! is_readable($filePath)) {
-			$this->json['result']['message'] = 'Certificate file is not readable';
-			return false;
-		}
-
-		$pem = file_get_contents($filePath);
-		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
-			$this->json['result']['message'] = 'Certificate file is not valid';
-			return false;
-		}
-		return $matches[0];
+		return $this->issuer === $this->subject;
 	}
 
-	private function verifySignedCertificate(string $pem, string $signed_pem): bool
+	public function get_publickey(): OpenSSLAsymmetricKey
 	{
-		$result = [
-			'x509' => null,
-			'signed_x509' => null,
-			'verify' => false,
-		];
+		return openssl_pkey_get_public($this->pem);
+	}
 
-		$result['x509'] = $this->pem_to_cert($pem);
-		if (false === $this->cert_is_valid($result['x509'])) {
-			$this->json['result']['message'] = 'Certificate is expired';
-			$this->json['chain'][] = $result;
+	public function verify_signed_by(self $signed_cert): bool
+	{
+		if (false === $this->is_valid()) {
+			$this->messages[] = 'Certificate is expired';
 			return false;
 		}
 
-		$result['signed_x509'] = $this->pem_to_cert($signed_pem);
-		if (false === $this->cert_is_valid($result['signed_x509'])) {
-			$this->json['result']['message'] = 'Signed certificate is expired';
-			$this->json['chain'][] = $result;
+		if (false === $signed_cert->is_valid()) {
+			$this->messages[] = 'Signed certificate is expired';
 			return false;
 		}
 
-		$signed_pkey = openssl_pkey_get_public($signed_pem);
-		if (false === (1 === openssl_x509_verify($pem, $signed_pkey))) {
-			$this->json['result']['message'] = 'Certificate is not signed with public key of signed certificate';
-			$this->json['chain'][] = $result;
+		if (1 !== openssl_x509_verify($this->pem, $signed_cert->get_publickey())) {
+			$this->messages[] = 'Certificate is not signed by public key of signed certificate';
 			return false;
 		}
-
-		$result['verify'] = true;
-		$this->json['chain'][] = $result;
 		return true;
 	}
 
-	private function verifyCertificateChain(string $certPath, string $rootCertPath): void
+	public function jsonSerialize(): mixed
 	{
-		if (false === ($certChain = $this->loadCertificates($certPath))
-			|| false ===($rootCertChain = $this->loadCertificates($rootCertPath))) {
-			return;
-		}
-		foreach ($certChain as $pem) {
-			if (isset($last_pem)) {
-				if (false === $this->pem_signed_by_issuer($last_pem, $pem)
-					|| false === $this->verifySignedCertificate($last_pem, $pem)) {
-					return;
-				}
+		return [
+			'subject' => $this->subject,
+			'issuer' => $this->issuer,
+			'not_before' => [
+				'timestamp' => $this->not_before,
+			],
+			'not_after' => [
+				'timestamp' => $this->not_after,
+			],
+			# 'raw' => $this->x509,
+		];
+	}
+}
+
+class SSLCertificateCollection extends SSLCertificateCommon implements Countable, Iterator
+{
+	protected int $position;
+
+	protected array $pems = [];
+	protected array $certs = [];
+
+	public function __construct(string $pem)
+	{
+		$this->position = 0;
+		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
+			$this->messages = 'Certificate file is not valid';
+		} else {
+			$this->pems = $matches[0];
+			foreach ($this->pems as $pem) {
+				$this->certs[] = new SSLCertificate($pem);
 			}
-			$last_pem = $pem;
+		}
+	}
+
+	public function search(string $key, mixed $value): false|SSLCertificate
+	{
+		foreach ($this as $index => $cert) {
+			if (property_exists($cert, $key)
+				&& $value === $cert->{$key}) {
+				return $cert;
+			}
+		}
+		return false;
+	}
+
+	public function count(): int
+	{
+		return count($this->certs);
+	}
+
+	public function rewind(): void
+	{
+		$this->position = 0;
+	}
+
+	public function current()
+	{
+		return $this->certs[$this->position];
+	}
+
+	public function key()
+	{
+		return $this->position;
+	}
+
+	public function next(): void
+	{
+		++$this->position;
+	}
+
+	public function valid(): bool
+	{
+		return isset($this->pems[$this->position]);
+	}
+
+	public function jsonSerialize(): mixed
+	{
+		return $this->certs;
+	}
+}
+
+class SSLCertificateVerify extends SSLCertificateCommon
+{
+	final const STATUS = [
+		-1 => 'valid-but-self-signed',
+		 0 => 'invalid',
+		 1 => 'valid',
+	];
+	
+	protected int $status = 0;
+	protected array $chain = [];
+
+	protected function get_ca_certs_path(): string
+	{
+		return openssl_get_cert_locations()['default_cert_file'];
+	}
+
+	protected function load_certs_file(string $certs_path): false|SSLCertificateCollection
+	{
+		if (empty($certs_path)) {
+			$this->messages = 'Certificate file is not specified';
+			return false;
+		} elseif (! is_file($certs_path)) {
+			$this->messages = 'Certificate file does not exist';
+			return false;
+		} elseif (! is_readable($certs_path)) {
+			$this->messages = 'Certificate file is not readable';
+			return false;
 		}
 
-		if (isset($last_pem)) {
-			foreach ($rootCertChain as $pem) {
-				if (true === $this->pem_signed_by_issuer($last_pem, $pem)) {
-					if (true === $this->verifySignedCertificate($last_pem, $pem)) {
-						$last_x509 = $this->pem_to_cert($last_pem);
-						if ($last_x509['subject'] === $last_x509['issuer']) {
-							$this->json['result']['value'] = 'valid-but-self-signed';
-						} else {
-							$this->json['result']['value'] = 'valid';
-						}
-					}
-					return;
+		$pem = file_get_contents($certs_path);
+		if (empty($pem)) {
+			$this->messages = 'Certificate file is not valid';
+			return false;
+		}
+
+		return new SSLCertificateCollection($pem);
+	}
+
+	protected function verify_chain(string $chain_certs_path, string $ca_certs_path): bool
+	{
+		$chain_certs = $this->load_certs_file($chain_certs_path);
+		if (false === $chain_certs) {
+			return false;
+		}
+
+		foreach ($chain_certs as $index => $cert) {
+			if ($index > 0) {
+				$this->chain[$index - 1]['signed_x509'] = $cert;
+				$subject_cert = $this->chain[$index - 1]['x509'];
+				if (false === $subject_cert->is_signed_by($cert)) {
+					$this->messages[] = 'Certificate is not signed by signed certificate';
+					return false;
+				} elseif (false === $subject_cert->verify_signed_by($cert)) {
+					$this->messages[] = $subject_cert->get_last_error();
+					return false;
+				} else {
+					$this->chain[$index - 1]['verified'] = true;
 				}
 			}
-			$this->json['chain'][] = [
-				'x509' => $this->pem_to_cert($last_pem),
+			$this->chain[] = [
+				'x509' => $cert,
 				'signed_x509' => null,
-				'verify' => false,
+				'verified' => false,
 			];
-			$this->json['result']['message'] = 'Signed certificate is not found';
 		}
+
+		$ca_certs = $this->load_certs_file($ca_certs_path);
+		if (false === $ca_certs) {
+			return false;
+		}
+
+		$subject_cert = $this->chain[count($this->chain) - 1]['x509'];
+		foreach ($ca_certs as $signed_cert) {
+			if (false === $subject_cert->is_signed_by($signed_cert)) {
+				continue;
+			} elseif ($subject_cert->verify_signed_by($signed_cert)) {
+				$this->chain[count($this->chain) - 1]['signed_x509'] = $signed_cert;
+				$this->chain[count($this->chain) - 1]['verified'] = true;
+				if ($subject_cert->is_self_signed()) {
+					$this->status = -1;
+					return true;
+				} else {
+					$this->status = 1;
+					return true;
+				}
+			} else {
+				$this->messages[] = $subject_cert->get_last_error();
+				return false;
+			}
+		}
+
+		$this->messages[] = 'Signed certificate is not found';
+		return false;
 	}
 
 	public function __construct()
 	{
-		$this->time = time();
 		global $argv;
-		$this->verifyCertificateChain($argv[1] ?? '', $argv[2] ?? openssl_get_cert_locations()['default_cert_file']);
-		echo json_encode($this->json);
+		$this->verify_chain($argv[1] ?? '', $argv[2] ?? $this->get_ca_certs_path());
+		echo json_encode($this);
+	}
+
+	public function jsonSerialize(): mixed
+	{
+		return [
+			'result' => [
+				'value' => self::STATUS[$this->status],
+				'message' => $this->get_last_error(),
+			],
+			'chain' => $this->chain,
+		];
 	}
 }
+
+new SSLCertificateVerify();
