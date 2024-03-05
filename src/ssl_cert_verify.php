@@ -97,9 +97,11 @@ class SSLCertificate extends SSLCertificateCommon
 			'subject' => $this->subject,
 			'issuer' => $this->issuer,
 			'not_before' => [
+				'datetime' => (new DateTimeImmutable("@{$this->not_before}"))->format(DateTimeInterface::W3C),
 				'timestamp' => $this->not_before,
 			],
 			'not_after' => [
+				'datetime' => (new DateTimeImmutable("@{$this->not_after}"))->format(DateTimeInterface::W3C),
 				'timestamp' => $this->not_after,
 			],
 			# 'raw' => $this->x509,
@@ -185,9 +187,9 @@ class SSLCertificateVerify extends SSLCertificateCommon
 	protected int $status = 0;
 	protected array $chain = [];
 
-	protected function get_ca_certs_path(): string
+	protected function get_ca_certs_path(string $certs_path): string
 	{
-		return openssl_get_cert_locations()['default_cert_file'];
+		return $certs_path ?: openssl_get_cert_locations()['default_cert_file'];
 	}
 
 	protected function load_certs_file(string $certs_path): false|SSLCertificateCollection
@@ -271,8 +273,14 @@ class SSLCertificateVerify extends SSLCertificateCommon
 
 	public function __construct()
 	{
-		global $argv;
-		$this->verify_chain($argv[1] ?? '', $argv[2] ?? $this->get_ca_certs_path());
+		try {
+			global $argv;
+			$chain_certs_path = $argv[1] ?? '';
+			$ca_certs_path = $this->get_ca_certs_path($argv[2] ?? '');
+			$this->verify_chain($chain_certs_path, $ca_certs_path);
+		} catch (Exception $e) {
+			error_log($e);
+		}
 		echo json_encode($this);
 	}
 
