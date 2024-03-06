@@ -25,9 +25,9 @@ class SSLCertificateDiscovery extends SSLCertificateCommon
 	final const CONF_DIR_LINUX = '/etc/nginx/conf.d';
 	final const CONF_DIR_KUSANAGI = '/etc/opt/kusanagi/nginx/conf.d';
 
-	private array $certs = [];
+	protected array $certs = [];
 	
-	private function getDefaultConfDir(): string
+	protected function getDefaultConfDir(): string
 	{
 		if (self::OS_FREEBSD === PHP_OS) {
 			return self::CONF_DIR_FREEBSD;
@@ -42,7 +42,7 @@ class SSLCertificateDiscovery extends SSLCertificateCommon
 		}
 	}
 
-	private function parseNginxConf(string $conf): array
+	protected function parseNginxConf(string $conf): array
 	{
 		$certs = [];
 		$conf = preg_replace('/\s*#.*$/m', '', $conf);
@@ -65,7 +65,7 @@ class SSLCertificateDiscovery extends SSLCertificateCommon
 		return $certs;
 	}
 
-	private function discoverConfDir(string $conf_dir): bool
+	protected function discoverConfDir(string $conf_dir): bool
 	{
 		if (empty($conf_dir)) {
 			$this->messages[] = 'Configuration directory is not specified';

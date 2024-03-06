@@ -9,7 +9,6 @@ $script = $argv[1];
 error_log("target is {$script}");
 $pharfile = "{$script}.phar";
 $pattern = '#/(include|' . preg_quote($script, '#') . ')/[^/]+\.php$#';
-var_dump($pattern);
 
 if (is_file($pharfile)) {
 	unlink($pharfile);

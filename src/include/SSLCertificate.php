@@ -14,6 +14,12 @@ require_once __DIR__ . '/SSLCertificateCommon.php';
 
 class SSLCertificate extends SSLCertificateCommon
 {
+	final const STATUS = [
+		-1 => 'valid-but-self-signed',
+		 0 => 'invalid',
+		 1 => 'valid',
+	];
+
 	protected string $pem;
 	protected array $x509;
 
@@ -22,7 +28,7 @@ class SSLCertificate extends SSLCertificateCommon
 	public readonly int $not_before;
 	public readonly int $not_after;
 
-	private function arrayToString(array $array): string
+	protected  function arrayToString(array $array): string
 	{
 		$result = [];
 		foreach ($array as $key => $value) {

@@ -11,107 +11,61 @@
  */
 
 require_once __DIR__ . '/SSLCertificateCommon.php';
-require_once __DIR__ . '/SSLCertificateCollection.php';
+require_once __DIR__ . '/SSLCertificateExtended.php';
 require_once __DIR__ . '/SSLCertificateStatus.php';
 require_once __DIR__ . '/SSLCertificateVersion.php';
 
-class SSLCertificateVerification extends SSLCertificateCommon
+class SSLCertificateCheck extends SSLCertificateCommon
 {
 	final const VERSION = SSL_CERTIFICATE_VERSION;
 	final const STATUS = SSL_CERTIFICATE_STATUS;
 
 	protected int $status = SSL_CERTIFICATE_INVALID;
-	protected array $chain = [];
+	protected SSLCertificateExtended $cert;
 
-	protected function getCACertsPath(): string
+	protected function loadCertPath(string $cert_path): false|SSLCertificateExtended
 	{
-		return openssl_get_cert_locations()['default_cert_file'];
-	}
-
-	protected function loadCertsPath(string $certs_path): false|SSLCertificateCollection
-	{
-		if (empty($certs_path)) {
+		if (empty($cert_path)) {
 			$this->messages[] = 'Certificate file is not specified';
 			return false;
-		} elseif (! is_file($certs_path)) {
+		} elseif (! is_file($cert_path)) {
 			$this->messages[] = 'Certificate file does not exist';
 			return false;
-		} elseif (! is_readable($certs_path)) {
+		} elseif (! is_readable($cert_path)) {
 			$this->messages[] = 'Certificate file is not readable';
 			return false;
 		}
 
-		$pem = file_get_contents($certs_path);
+		$pem = file_get_contents($cert_path);
 		if (empty($pem)) {
 			$this->messages[] = 'Certificate file is not valid';
 			return false;
 		}
 
-		return new SSLCertificateCollection($pem);
+		return new SSLCertificateExtended($pem);
 	}
 
-	protected function verifyChain(string $chain_path, string $ca_path): bool
+	protected function checkCertificate(string $cert_path): bool
 	{
-		$chain_certs = $this->loadCertsPath($chain_path);
-		if (false === $chain_certs) {
+		$cert = $this->loadCertPath($cert_path);
+		if (false === $cert) {
 			return false;
 		}
-
-		foreach ($chain_certs as $index => $cert) {
-			if ($index > 0) {
-				$this->chain[$index - 1]['signed_x509'] = $cert;
-				$subject_cert = $this->chain[$index - 1]['x509'];
-				if (false === $subject_cert->isSignedWith($cert)) {
-					$this->messages[] = 'Certificate is not signed by signed certificate';
-					return false;
-				} elseif (false === $subject_cert->verifySignedWith($cert)) {
-					$this->messages[] = $subject_cert->getLastError();
-					return false;
-				} else {
-					$this->chain[$index - 1]['verified'] = true;
-				}
-			}
-			$this->chain[] = [
-				'x509' => $cert,
-				'signed_x509' => null,
-				'verified' => false,
-			];
-		}
-
-		$ca_certs = $this->loadCertsPath($ca_path);
-		if (false === $ca_certs) {
-			return false;
-		}
-
-		$subject_cert = $this->chain[count($this->chain) - 1]['x509'];
-		foreach ($ca_certs as $signed_cert) {
-			if (false === $subject_cert->isSignedWith($signed_cert)) {
-				continue;
-			} elseif ($subject_cert->verifySignedWith($signed_cert)) {
-				$this->chain[count($this->chain) - 1]['signed_x509'] = $signed_cert;
-				$this->chain[count($this->chain) - 1]['verified'] = true;
-				if ($subject_cert->isSelfSigned()) {
-					$this->status = SSL_CERTIFICATE_SELF_SIGNED;
-					return true;
-				} else {
-					$this->status = SSL_CERTIFICATE_VALID;
-					return true;
-				}
+		$this->cert = $cert;
+		if ($cert->isValid()) {
+			if ($cert->isSelfSigned()) {
+				$this->status = SSL_CERTIFICATE_SELF_SIGNED;
 			} else {
-				$this->messages[] = $subject_cert->getLastError();
-				return false;
+				$this->status = SSL_CERTIFICATE_VALID;
 			}
 		}
-
-		$this->messages[] = 'Signed certificate is not found';
-		return false;
+		return true;
 	}
 
-	public function __construct(string $chain_path, string $ca_path)
+	public function __construct(string $cert_path)
 	{
 		try {
-			$ca_path = $ca_path ?: $this->getCACertsPath();
-			$this->verifyChain($chain_path, $ca_path);
+			$this->checkCertificate($cert_path);
 		} catch (\Exception $e) {
 			error_log($e);
 		}
@@ -120,13 +74,17 @@ class SSLCertificateVerification extends SSLCertificateCommon
 
 	public function jsonSerialize(): mixed
 	{
-		return [
+		$json = [
 			'version' => self::VERSION,
 			'result' => [
 				'value' => self::STATUS[$this->status],
 				'message' => $this->getLastError(),
 			],
-			'chain' => $this->chain,
 		];
+		if (! empty($this->cert)) {
+			$json['x509'] = $this->cert;
+			$json['sha1_fingerprint'] = $this->cert->sha1_fingerprint;
+		}
+		return $json;
 	}
 }
