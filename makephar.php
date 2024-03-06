@@ -8,13 +8,12 @@ if (! isset($argv[1])) {
 $script = $argv[1];
 error_log("target is {$script}");
 $pharfile = "{$script}.phar";
-$pattern = '#/(include|' . preg_quote($script, '#') . ')/[^/]+\.php$#';
-
 if (is_file($pharfile)) {
 	unlink($pharfile);
 }
-$phar = new Phar("{$script}.phar");
-$phar->buildFromDirectory(__DIR__ . '/src/', $pattern);
+$phar = new Phar($pharfile);
+$phar->buildFromDirectory(__DIR__ . '/src/', '#/include/[^/]+\.php$#');
+$phar->addFile(__DIR__ . "/src/{$script}.php", '/index.php');
 $phar->compressFiles(Phar::GZ);
 $phar->setStub(createStub($script));
 $phar->stopBuffering();
@@ -27,7 +26,7 @@ function createStub($script)
 #!/usr/bin/env php
 <?php
 Phar::mapPhar('{$script}.phar');
-include 'phar://{$script}.phar/{$script}/index.php';
+include 'phar://{$script}.phar/index.php';
 __HALT_COMPILER();
 EOF;
 	return $stub;
