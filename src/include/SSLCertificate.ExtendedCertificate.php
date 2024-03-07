@@ -10,7 +10,9 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-class SSLCertificateExtended extends SSLCertificate
+namespace SSLCertificate;
+
+class ExtendedCertificate extends Certificate
 {
 	protected string $text;
 
@@ -53,7 +55,7 @@ class SSLCertificateExtended extends SSLCertificate
 	protected  function filterTimestamp(string $output): int
 	{
 		if ('' !== $output) {
-			return (new DateTimeImmutable($output))->getTimestamp();
+			return (new \DateTimeImmutable($output))->getTimestamp();
 		} else {
 			return 0;
 		}
@@ -83,22 +85,12 @@ class SSLCertificateExtended extends SSLCertificate
 
 	public function jsonSerialize(): mixed
 	{
-		return [
-			'version' => $this->version,
-			'serial_number' => $this->serial_number,
-			'signature_algorithm' => $this->signature_algorithm,
-			'issuer' => $this->issuer,
-			'not_before' => [
-				'datetime' => (new \DateTimeImmutable("@{$this->not_before}"))->format(DateTimeInterface::W3C),
-				'timestamp' => $this->not_before,
-			],
-			'not_after' => [
-				'datetime' => (new \DateTimeImmutable("@{$this->not_after}"))->format(DateTimeInterface::W3C),
-				'timestamp' => $this->not_after,
-			],
-			'subject' => $this->subject,
-			'alternative_names' => $this->alternative_names,
-			'public_key_algorithm' => $this->public_key_algorithm,
-		];
+		$json = parent::jsonSerialize();
+		$json['version'] = $this->version;
+		$json['serial_number'] = $this->serial_number;
+		$json['signature_algorithm'] = $this->signature_algorithm;
+		$json['alternative_names'] = $this->alternative_names;
+		$json['public_key_algorithm'] = $this->public_key_algorithm;
+		return $json;
 	}
 }

@@ -10,15 +10,14 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-class SSLCertificateCheck extends SSLCertificateCommon
+namespace SSLCertificate;
+
+class Checker extends Common
 {
-	final const VERSION = SSL_CERTIFICATE_VERSION;
-	final const STATUS = SSL_CERTIFICATE_STATUS;
+	protected int $status = self::CERTIFICATE_INVALID;
+	protected ExtendedCertificate $cert;
 
-	protected int $status = SSL_CERTIFICATE_INVALID;
-	protected SSLCertificateExtended $cert;
-
-	protected function loadCertPath(string $cert_path): false|SSLCertificateExtended
+	protected function loadCertPath(string $cert_path): false|ExtendedCertificate
 	{
 		if (empty($cert_path)) {
 			$this->messages[] = 'Certificate file is not specified';
@@ -37,7 +36,7 @@ class SSLCertificateCheck extends SSLCertificateCommon
 			return false;
 		}
 
-		return new SSLCertificateExtended($pem);
+		return new ExtendedCertificate($pem);
 	}
 
 	protected function checkCertificate(string $cert_path): bool
@@ -49,9 +48,9 @@ class SSLCertificateCheck extends SSLCertificateCommon
 		$this->cert = $cert;
 		if ($cert->isValid()) {
 			if ($cert->isSelfSigned()) {
-				$this->status = SSL_CERTIFICATE_SELF_SIGNED;
+				$this->status = self::CERTIFICATE_SELF_SIGNED;
 			} else {
-				$this->status = SSL_CERTIFICATE_VALID;
+				$this->status = self::CERTIFICATE_VALID;
 			}
 		}
 		return true;
@@ -72,7 +71,7 @@ class SSLCertificateCheck extends SSLCertificateCommon
 		$json = [
 			'version' => self::VERSION,
 			'result' => [
-				'value' => self::STATUS[$this->status],
+				'value' => self::CERTIFICATE_STATUS[$this->status],
 				'message' => $this->getLastError(),
 			],
 		];

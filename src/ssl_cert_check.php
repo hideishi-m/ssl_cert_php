@@ -13,4 +13,4 @@
 require_once __DIR__ . '/include/autoload.php';
 
 global $argv;
-new SSLCertificateCheck($argv[1] ?? '');
+new \SSLCertificate\Checker($argv[1] ?? '');

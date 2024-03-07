@@ -10,12 +10,11 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-class SSLCertificateVerification extends SSLCertificateCommon
-{
-	final const VERSION = SSL_CERTIFICATE_VERSION;
-	final const STATUS = SSL_CERTIFICATE_STATUS;
+namespace SSLCertificate;
 
-	protected int $status = SSL_CERTIFICATE_INVALID;
+class Verification extends Common
+{
+	protected int $status = self::CERTIFICATE_INVALID;
 	protected array $chain = [];
 
 	protected function getCACertsPath(): string
@@ -23,7 +22,7 @@ class SSLCertificateVerification extends SSLCertificateCommon
 		return openssl_get_cert_locations()['default_cert_file'];
 	}
 
-	protected function loadCertsPath(string $certs_path): false|SSLCertificateCollection
+	protected function loadCertsPath(string $certs_path): false|Collection
 	{
 		if (empty($certs_path)) {
 			$this->messages[] = 'Certificate file is not specified';
@@ -42,7 +41,7 @@ class SSLCertificateVerification extends SSLCertificateCommon
 			return false;
 		}
 
-		return new SSLCertificateCollection($pem);
+		return new Collection($pem);
 	}
 
 	protected function verifyChain(string $chain_path, string $ca_path): bool
@@ -86,10 +85,10 @@ class SSLCertificateVerification extends SSLCertificateCommon
 				$this->chain[count($this->chain) - 1]['signed_x509'] = $signed_cert;
 				$this->chain[count($this->chain) - 1]['verified'] = true;
 				if ($subject_cert->isSelfSigned()) {
-					$this->status = SSL_CERTIFICATE_SELF_SIGNED;
+					$this->status = self::CERTIFICATE_SELF_SIGNED;
 					return true;
 				} else {
-					$this->status = SSL_CERTIFICATE_VALID;
+					$this->status = self::CERTIFICATE_VALID;
 					return true;
 				}
 			} else {
@@ -118,7 +117,7 @@ class SSLCertificateVerification extends SSLCertificateCommon
 		return [
 			'version' => self::VERSION,
 			'result' => [
-				'value' => self::STATUS[$this->status],
+				'value' => self::CERTIFICATE_STATUS[$this->status],
 				'message' => $this->getLastError(),
 			],
 			'chain' => $this->chain,

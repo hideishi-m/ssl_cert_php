@@ -24,17 +24,17 @@ EOF;
 function buildPhar(string $target): void
 {
 	error_log("target is {$target}");
-	$pharfile = "{$target}.phar";
-	if (is_file($pharfile)) {
-		unlink($pharfile);
+	$phar = "{$target}.phar";
+	if (is_file($phar)) {
+		unlink($phar);
 	}
-	$phar = new Phar($pharfile);
-	$phar->buildFromDirectory(__DIR__ . '/src/', '#/include/[^/]+\.php$#');
-	$phar->addFile(__DIR__ . "/src/{$target}.php", '/index.php');
-	$phar->compressFiles(Phar::GZ);
-	$phar->setStub(createStub($target));
-	$phar->stopBuffering();
-	rename($pharfile, $target);
+	$ph = new Phar($phar);
+	$ph->buildFromDirectory(__DIR__ . '/src/', '#/include/[^/]+\.php$#');
+	$ph->addFile(__DIR__ . "/src/{$target}.php", '/index.php');
+	$ph->compressFiles(Phar::GZ);
+	$ph->setStub(createStub($target));
+	$ph->stopBuffering();
+	rename($phar, $target);
 	chmod($target, 0755);
 }
 

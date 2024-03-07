@@ -10,69 +10,29 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-class SSLCertificateCollection extends SSLCertificateCommon implements \Countable, \Iterator
+namespace SSLCertificate;
+
+abstract class Common implements \JsonSerializable
 {
-	protected int $position;
+	final const VERSION = '1.0.0';
 
-	protected array $pems = [];
-	protected array $certs = [];
+	final const CERTIFICATE_SELF_SIGNED = -1;
+	final const CERTIFICATE_INVALID = 0;
+	final const CERTIFICATE_VALID = 1;
+	final const CERTIFICATE_STATUS = [
+		self::CERTIFICATE_SELF_SIGNED => 'valid-but-self-signed',
+		self::CERTIFICATE_INVALID => 'invalid',
+		self::CERTIFICATE_VALID => 'valid',
+	];
 
-	public function __construct(string $pem)
+	protected array $messages = [];
+
+	public function getLastError(): string
 	{
-		$this->position = 0;
-		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
-			$this->messages[] = 'Certificate file is not valid';
+		if ($length = count($this->messages)) {
+			return $this->messages[$length - 1];
 		} else {
-			$this->pems = $matches[0];
-			foreach ($this->pems as $pem) {
-				$this->certs[] = new SSLCertificate($pem);
-			}
+			return '';
 		}
-	}
-
-	public function search(string $key, mixed $value): false|SSLCertificate
-	{
-		foreach ($this as $index => $cert) {
-			if (property_exists($cert, $key)
-				&& $value === $cert->{$key}) {
-				return $cert;
-			}
-		}
-		return false;
-	}
-
-	public function count(): int
-	{
-		return count($this->certs);
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function current()
-	{
-		return $this->certs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->pems[$this->position]);
-	}
-
-	public function jsonSerialize(): mixed
-	{
-		return $this->certs;
 	}
 }

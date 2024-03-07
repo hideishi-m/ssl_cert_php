@@ -10,7 +10,9 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-class SSLCertificate extends SSLCertificateCommon
+namespace SSLCertificate;
+
+class Certificate extends Common
 {
 	final const STATUS = [
 		-1 => 'valid-but-self-signed',
@@ -95,11 +97,11 @@ class SSLCertificate extends SSLCertificateCommon
 			'subject' => $this->subject,
 			'issuer' => $this->issuer,
 			'not_before' => [
-				'datetime' => (new \DateTimeImmutable("@{$this->not_before}"))->format(DateTimeInterface::W3C),
+				'datetime' => (new \DateTimeImmutable("@{$this->not_before}"))->format(\DateTimeInterface::W3C),
 				'timestamp' => $this->not_before,
 			],
 			'not_after' => [
-				'datetime' => (new \DateTimeImmutable("@{$this->not_after}"))->format(DateTimeInterface::W3C),
+				'datetime' => (new \DateTimeImmutable("@{$this->not_after}"))->format(\DateTimeInterface::W3C),
 				'timestamp' => $this->not_after,
 			],
 			# 'raw' => $this->x509,
