@@ -18,3 +18,5 @@ define('SSL_CERTIFICATE_STATUS', [
 	SSL_CERTIFICATE_INVALID => 'invalid',
 	SSL_CERTIFICATE_VALID => 'valid',
 ]);
+
+define('SSL_CERTIFICATE_VERSION', '1.0.0');

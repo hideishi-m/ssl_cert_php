@@ -10,10 +10,6 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once __DIR__ . '/NginxConfDirRecursiveFilterIterator.php';
-require_once __DIR__ . '/SSLCertificateCommon.php';
-require_once __DIR__ . '/SSLCertificateVersion.php';
-
 class SSLCertificateDiscovery extends SSLCertificateCommon
 {
 	final const VERSION = SSL_CERTIFICATE_VERSION;
@@ -80,7 +76,7 @@ class SSLCertificateDiscovery extends SSLCertificateCommon
 
 		$cert_paths = [];
 		$conf_dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
-		$filter_iterator = new NginxConfDirRecursiveFilterIterator($conf_dir_iterator);
+		$filter_iterator = new \RecursiveRegexIterator($conf_dir_iterator, '#\.conf$#');
 		$iterator = new \RecursiveIteratorIterator($filter_iterator);
 		foreach ($iterator as $file_info) {
 			$file_obj = $file_info->openFile('r');
