@@ -86,11 +86,15 @@ class ExtendedCertificate extends Certificate
 	public function jsonSerialize(): mixed
 	{
 		$json = parent::jsonSerialize();
-		$json['version'] = $this->version;
-		$json['serial_number'] = $this->serial_number;
-		$json['signature_algorithm'] = $this->signature_algorithm;
-		$json['alternative_names'] = $this->alternative_names;
-		$json['public_key_algorithm'] = $this->public_key_algorithm;
+		foreach ([
+			'version' => $this->version,
+			'serial_number' => $this->serial_number,
+			'signature_algorithm' => $this->signature_algorithm,
+			'alternative_names' => $this->alternative_names,
+			'public_key_algorithm' => $this->public_key_algorithm,
+		] as $key => $value) {
+			$json[$key] = $value;
+		}
 		return $json;
 	}
 }

@@ -52,15 +52,18 @@ class Discovery extends Common
 		}
 
 		$cert_paths = [];
-		$conf_dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
-		$conf_dir_iterator->setInfoClass(\NginxConf\FileInfo::class);
-		$filter_iterator = new \RecursiveRegexIterator($conf_dir_iterator, '#\.conf$#');
-		$iterator = new \RecursiveIteratorIterator($filter_iterator);
-		foreach ($iterator as $file_info) {
+		$dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
+		$dir_iterator->setInfoClass(\NginxConf\FileInfo::class);
+		$filter_iterator = new \RecursiveRegexIterator($dir_iterator, '#\.conf$#');
+		$file_iterator = new \RecursiveIteratorIterator($filter_iterator);
+		foreach ($file_iterator as $file_info) {
 			foreach ($file_info->getServerConfigs(false) as $server_conf) {
 				foreach ($server_conf->getServerCerts() as $server_cert) {
+					$pem = file_get_contents($server_cert['ssl_certificate']);
+					$cert = new SimpleCertificate($pem);
 					$this->certs[] = [
-						'{#CERTNAME}' => $server_cert['server_name'],
+						'{#SERVERNAME}' => $server_cert['server_name'],
+						'{#CERTNAME}' => $cert->common_name,
 						'{#CERTPATH}' => $server_cert['ssl_certificate'],
 					];
 				}

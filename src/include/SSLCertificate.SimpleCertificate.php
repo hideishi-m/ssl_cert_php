@@ -10,67 +10,32 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace NginxConf;
+namespace SSLCertificate;
 
-class FileInfo extends \SplFileInfo
+class SimpleCertificate extends Common
 {
-	protected bool $_root_dir_loaded = false;
-	protected string $root_dir = '';
-	protected bool $_server_configs_loaded = false;
-	protected array $server_configs = [];
+	protected string $pem;
+	protected array $x509;
 
-	protected function loadRootDir(): void
+	public readonly string $common_name;
+
+	public function __construct(string $pem)
 	{
-		if ($this->_root_dir_loaded) {
+		$this->pem = $pem;
+		$x509 = openssl_x509_parse($this->pem);
+		if (false === $x509) {
+			$this->messages[] = 'Certificate file is not valid';
 			return;
 		}
-		$conf_path = $this->getPathname();
-		$pos = strpos($conf_path, '/nginx/conf.d/');
-		if (false !== $pos) {
-			$this->root_dir = substr($conf_path, 0, $pos) . '/nginx';
-		}
-		$this->_root_dir_loaded = true;
-	}
+		$this->x509 = $x509;
 
-	protected function appendServerConfig(array $block): void
-	{
-		$this->loadRootDir();
-		$this->server_configs[] = new ServerConfig($block, $this->root_dir);
+		$this->common_name = $this->x509['subject']['CN'];
 	}
-
-	protected function loadServerConfigs(): void
+	public function jsonSerialize(): mixed
 	{
-		if ($this->_server_configs_loaded) {
-			return;
-		}
-		$file_obj = $this->openFile('r');
-		if ($file_obj) {
-			$block = [];
-			$has_server = false;
-			while (! $file_obj->eof()) {
-				$line = $file_obj->fgets();
-				$line = preg_replace(ServerConfig::COMMENT_PATTERN, '', $line);
-				if (preg_match(ServerConfig::SERVER_PATTERN, $line)) {
-					if ($has_server) {
-						$this->appendServerConfig($block);
-					}
-					$block = [];
-					$has_server = true;
-				}
-				if (! empty($line)) {
-					$block[] = $line;
-				}
-			}
-			if ($has_server) {
-				$this->appendServerConfig($block);
-			}
-		}
-		$this->_server_configs_loaded = true;
-	}
-
-	public function getServerConfigs(): array
-	{
-		$this->loadServerConfigs();
-		return $this->server_configs;
+		return [
+			'common_name' => $this->common_name,
+			# 'raw' => $this->x509,
+		];
 	}
 }

@@ -22,16 +22,17 @@ class ServerConfig implements \JsonSerializable
 	final const INCLUDE_PATTERN = '/^\s*include\s+([^\s;]+)\s*;/';
 
 	protected array $block;
+	protected string $root_dir;
 
 	public readonly array $server_names;
 	public readonly array $ssl_certs;
 	public readonly array $ssl_cert_keys;
 
-	protected static function loadIncludeBlock(string $include, string $root_dir): array
+	protected function loadIncludeBlock(string $include): array
 	{
 		$block = [];
 		if (0 !== strpos($include, '/')) {
-			$include = "{$root_dir}/{$include}";
+			$include = "{$this->root_dir}/{$include}";
 		}
 		$file_iterator = new \GlobIterator($include);
 		foreach ($file_iterator as $file_info) {
@@ -47,50 +48,6 @@ class ServerConfig implements \JsonSerializable
 		return $block;
 	}
 
-	public static function createFromBlock(array $block, string $root_dir = null): false|self
-	{
-		$has_server = false;
-		$server_names = [];
-		$ssl_certs = [];
-		$ssl_cert_keys = [];
-		if (! empty($block)) {
-			for ($i = 0; $i < count($block); $i++) {
-				$line = $block[$i];
-				if (preg_match(self::SERVER_PATTERN, $line)) {
-					$has_server = true;
-				} elseif (preg_match(self::SERVER_NAME_PATTERN, $line, $match)) {
-					foreach (preg_split('/\s+/', $match[1]) as $server_name) {
-						if (! empty($server_name)) {
-							$server_names[] = $server_name;
-						}
-					}
-				} elseif (preg_match(self::SSL_CERT_PATTERN, $line, $match)) {
-					$ssl_certs[] = $match[1];
-				} elseif (preg_match(self::SSL_CERT_KEY_PATTERN, $line, $match)) {
-					$ssl_cert_keys[] = $match[1];
-				} elseif (preg_match(self::INCLUDE_PATTERN, $line, $match)) {
-					$include_block = self::loadIncludeBlock($match[1], $root_dir);
-					array_splice($block, $i, 1, $include_block);
-					--$i;
-				}
-			}
-			if (
-				$has_server
-				&& ! empty($server_names)
-				&& ! empty($ssl_certs)
-				&& ! empty($ssl_cert_keys)
-			) {
-				return new self(
-					$block,
-					$server_names,
-					$ssl_certs,
-					$ssl_cert_keys
-				);
-			}
-		}
-		return false;
-	}
-
 	public function getBlock(): string
 	{
 		return implode(PHP_EOL, $this->block);
@@ -99,24 +56,46 @@ class ServerConfig implements \JsonSerializable
 	public function getServerCerts(): array
 	{
 		$server_certs = [];
-		$server_name = $this->server_names[0];
-		foreach ($this->ssl_certs as $ssl_cert) {
-			$server_certs[] = [
-				'server_name' => $server_name,
-				'ssl_certificate' => $ssl_cert,
-			];
+		if (! empty($this->server_names)
+			&& ! empty($this->ssl_certs)) {
+			$server_name = $this->server_names[0];
+			foreach ($this->ssl_certs as $ssl_cert) {
+				$server_certs[] = [
+					'server_name' => $server_name,
+					'ssl_certificate' => $ssl_cert,
+				];
+			}
 		}
 		return $server_certs;
 	}
 
-	protected function __construct(
-		array $block,
-		array $server_names,
-		array $ssl_certs,
-		array $ssl_cert_keys
-	)
+	public function __construct(array $block, string $root_dir)
 	{
 		$this->block = $block;
+		$this->root_dir = $root_dir;
+
+		$server_names = [];
+		$ssl_certs = [];
+		$ssl_cert_keys = [];
+		for ($i = 0; $i < count($this->block); $i++) {
+			$line = $this->block[$i];
+			if (preg_match(self::SERVER_NAME_PATTERN, $line, $match)) {
+				foreach (preg_split('/\s+/', $match[1]) as $server_name) {
+					if (! empty($server_name)) {
+						$server_names[] = $server_name;
+					}
+				}
+			} elseif (preg_match(self::SSL_CERT_PATTERN, $line, $match)) {
+				$ssl_certs[] = $match[1];
+			} elseif (preg_match(self::SSL_CERT_KEY_PATTERN, $line, $match)) {
+				$ssl_cert_keys[] = $match[1];
+			} elseif (preg_match(self::INCLUDE_PATTERN, $line, $match)) {
+				$include_block = self::loadIncludeBlock($match[1], $root_dir);
+					array_splice($this->block, $i, 1, $include_block);
+				--$i;
+			}
+		}
+
 		$this->server_names = $server_names;
 		$this->ssl_certs = $ssl_certs;
 		$this->ssl_cert_keys = $ssl_cert_keys;
