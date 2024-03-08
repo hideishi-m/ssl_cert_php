@@ -14,7 +14,7 @@ namespace SSLCertificate;
 
 class Checker extends Common
 {
-	protected int $status = self::CERTIFICATE_INVALID;
+	protected int $status = CERTIFICATE_INVALID;
 	protected ExtendedCertificate $cert;
 
 	protected function loadCertPath(string $cert_path): false|ExtendedCertificate
@@ -48,9 +48,9 @@ class Checker extends Common
 		$this->cert = $cert;
 		if ($cert->isValid()) {
 			if ($cert->isSelfSigned()) {
-				$this->status = self::CERTIFICATE_SELF_SIGNED;
+				$this->status = CERTIFICATE_SELF_SIGNED;
 			} else {
-				$this->status = self::CERTIFICATE_VALID;
+				$this->status = CERTIFICATE_VALID;
 			}
 		}
 		return true;
@@ -69,9 +69,9 @@ class Checker extends Common
 	public function jsonSerialize(): mixed
 	{
 		$json = [
-			'version' => self::VERSION,
+			'version' => VERSION,
 			'result' => [
-				'value' => self::CERTIFICATE_STATUS[$this->status],
+				'value' => CERTIFICATE_STATUS[$this->status],
 				'message' => $this->getLastError(),
 			],
 		];

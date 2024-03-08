@@ -12,16 +12,13 @@
 
 namespace SSLCertificate;
 
-abstract class Common implements \JsonSerializable
-{
-	protected array $messages = [];
+const VERSION = '1.0.0';
 
-	public function getLastError(): string
-	{
-		if ($length = count($this->messages)) {
-			return $this->messages[$length - 1];
-		} else {
-			return '';
-		}
-	}
-}
+const CERTIFICATE_SELF_SIGNED = -1;
+const CERTIFICATE_INVALID = 0;
+const CERTIFICATE_VALID = 1;
+const CERTIFICATE_STATUS = [
+	CERTIFICATE_SELF_SIGNED => 'valid-but-self-signed',
+	CERTIFICATE_INVALID => 'invalid',
+	CERTIFICATE_VALID => 'valid',
+];

@@ -22,8 +22,8 @@ class Discovery extends Common
 	final const CONF_DIR_KUSANAGI = '/etc/opt/kusanagi/nginx/conf.d';
 
 	protected array $certs = [];
-	
-	protected function getDefaultConfDir(): string
+
+	protected function getDefaultNginxConfDir(): string
 	{
 		if (self::OS_FREEBSD === PHP_OS) {
 			return self::CONF_DIR_FREEBSD;
@@ -38,30 +38,7 @@ class Discovery extends Common
 		}
 	}
 
-	protected function parseNginxConf(string $conf): array
-	{
-		$certs = [];
-		$conf = preg_replace('/\s*#.*$/m', '', $conf);
-		$blocks = preg_split('/^\s*server\s*{\s*/m', $conf);
-		foreach ($blocks as $block) {
-			if (preg_match('/^[^#]*server_name\s+([^#;]+)\s*;\s*(?:#.*)?$/m', $block, $match)) {
-				$server_names = preg_split('/\s+/', $match[1]);
-			}
-			if (preg_match('/^[^#]*ssl_certificate\s+([^ #;]+)\s*;\s*(?:#.*)?$/m', $block, $match)) {
-				$cert_path = $match[1];
-			}
-			if (! empty($server_names[0])
-				&& ! empty($cert_path)) {
-				$certs[] = [
-					'{#CERTNAME}' => $server_names[0], 
-					'{#CERTPATH}' => $cert_path,
-				 ];
-			}
-		}
-		return $certs;
-	}
-
-	protected function discoverConfDir(string $conf_dir): bool
+	protected function discoverNginxConfDir(string $conf_dir): bool
 	{
 		if (empty($conf_dir)) {
 			$this->messages[] = 'Configuration directory is not specified';
@@ -76,30 +53,17 @@ class Discovery extends Common
 
 		$cert_paths = [];
 		$conf_dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
+		$conf_dir_iterator->setInfoClass(\NginxConf\FileInfo::class);
 		$filter_iterator = new \RecursiveRegexIterator($conf_dir_iterator, '#\.conf$#');
 		$iterator = new \RecursiveIteratorIterator($filter_iterator);
 		foreach ($iterator as $file_info) {
-			$file_obj = $file_info->openFile('r');
-			foreach ($file_obj as $line) {
-				if (preg_match('/^[^#]*ssl_certificate\s+([^ #;]+)\s*;\s*(?:#.*)?$/', $line, $match)) {
-					$cert_path = $match[1];
-					if (! in_array($cert_path, $cert_paths, true)
-						&& is_file($cert_path)) {
-						$cert_paths[] = $cert_path;
-					}
+			foreach ($file_info->getServerConfigs(false) as $server_conf) {
+				foreach ($server_conf->getServerCerts() as $server_cert) {
+					$this->certs[] = [
+						'{#CERTNAME}' => $server_cert['server_name'],
+						'{#CERTPATH}' => $server_cert['ssl_certificate'],
+					];
 				}
-			}
-		}
-		foreach ($cert_paths as $cert_path) {
-			if (is_readable($cert_path)
-				&& false !== ($pem = file_get_contents($cert_path))
-				&& false !== ($x509 = openssl_x509_parse($pem))
-				&& isset($x509['subject'])
-				&& isset($x509['subject']['CN'])) {
-				$this->certs[] = [
-					'{#CERTNAME}' => $x509['subject']['CN'],
-					'{#CERTPATH}' => $cert_path,
-				];
 			}
 		}
 
@@ -109,8 +73,8 @@ class Discovery extends Common
 	public function __construct(string $conf_dir)
 	{
 		try {
-			$conf_dir = $conf_dir ?: $this->getDefaultConfDir();
-			$this->discoverConfDir($conf_dir);
+			$conf_dir = $conf_dir ?: $this->getDefaultNginxConfDir();
+			$this->discoverNginxConfDir($conf_dir);
 		} catch (\Exception $e) {
 			error_log($e);
 		}

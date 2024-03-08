@@ -14,12 +14,6 @@ namespace SSLCertificate;
 
 class Certificate extends Common
 {
-	final const STATUS = [
-		-1 => 'valid-but-self-signed',
-		 0 => 'invalid',
-		 1 => 'valid',
-	];
-
 	protected string $pem;
 	protected array $x509;
 

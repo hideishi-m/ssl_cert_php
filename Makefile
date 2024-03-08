@@ -15,7 +15,7 @@ ssl_cert_verify: src/ssl_cert_verify.php $(SRCS)
 clean:
 	rm -rf $(TARGETS)
 
-test: $(TARGETS)
+test:
 	@echo ssl_cert_discovery
 	./ssl_cert_discovery | jq
 	@echo ssl_cert_check /etc/letsencrypt/live/balthasar.magisystem.net/fullchain.pem
