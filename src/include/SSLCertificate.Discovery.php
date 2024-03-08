@@ -23,6 +23,28 @@ class Discovery extends Common
 
 	protected array $certs = [];
 
+	protected function loadCertPath(string $cert_path): false|Certificate
+	{
+		if (empty($cert_path)) {
+			$this->messages[] = 'Certificate file is not specified';
+			return false;
+		} elseif (! is_file($cert_path)) {
+			$this->messages[] = 'Certificate file does not exist';
+			return false;
+		} elseif (! is_readable($cert_path)) {
+			$this->messages[] = 'Certificate file is not readable';
+			return false;
+		}
+
+		$pem = file_get_contents($cert_path);
+		if (empty($pem)) {
+			$this->messages[] = 'Certificate file is not valid';
+			return false;
+		}
+
+		return new Certificate($pem, CERTIFICATE_SIMPLE);
+	}
+
 	protected function getDefaultNginxConfDir(): string
 	{
 		if (self::OS_FREEBSD === PHP_OS) {
@@ -51,7 +73,6 @@ class Discovery extends Common
 			return false;
 		}
 
-		$cert_paths = [];
 		$dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
 		$dir_iterator->setInfoClass(\NginxConf\FileInfo::class);
 		$filter_iterator = new \RecursiveRegexIterator($dir_iterator, '#\.conf$#');
@@ -59,12 +80,11 @@ class Discovery extends Common
 		foreach ($file_iterator as $file_info) {
 			foreach ($file_info->getServerConfigs(false) as $server_conf) {
 				foreach ($server_conf->getServerCerts() as $server_cert) {
-					$pem = file_get_contents($server_cert['ssl_certificate']);
-					$x509 = openssl_x509_parse($pem);
-					if (false !== $x509) {
+					$cert = $this->loadCertPath($server_cert['ssl_certificate']);
+					if (! empty($cert->common_name)) {
 						$this->certs[] = [
 							'{#SERVERNAME}' => $server_cert['server_name'],
-							'{#CERTNAME}' => $x509['subject']['CN'],
+							'{#CERTNAME}' => $cert->common_name,
 							'{#CERTPATH}' => $server_cert['ssl_certificate'],
 						];
 					}

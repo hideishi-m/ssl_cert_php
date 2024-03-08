@@ -14,13 +14,28 @@ namespace SSLCertificate;
 
 class Certificate extends Common
 {
+	protected int $mode;
+
 	protected string $pem;
 	protected array $x509;
+	protected string $text;
 
+	// Simple
+	public readonly string $common_name;
+
+	// Default
 	public readonly string $subject;
 	public readonly string $issuer;
 	public readonly int $not_before;
 	public readonly int $not_after;
+
+	// Extended
+	public readonly int $version;
+	public readonly string $serial_number;
+	public readonly string $signature_algorithm;
+	public readonly string $alternative_names;
+	public readonly string $public_key_algorithm;
+	public readonly string $sha1_fingerprint;
 
 	protected  function arrayToString(array $array): string
 	{
@@ -34,19 +49,85 @@ class Certificate extends Common
 		return implode( ', ', $result);
 	}
 
-	public function __construct(string $pem)
+	protected  function matchInLine(string $needle, string $text): string
 	{
+		$output = '';
+		$regex = '#^\s*' . preg_quote($needle, '#') . ': (.+)$#m';
+		if (preg_match($regex, $text, $match)) {
+			$output = $match[1];
+		}
+		return $output;
+	}
+
+	protected  function matchNextLine(string $needle, string $text): string
+	{
+		$output = '';
+		$regex = '#^\s*' . preg_quote($needle, '#') . ':\s+(.+)$#m';
+		if (preg_match($regex, $text, $match)) {
+			$output = $match[1];
+		}
+		return $output;
+	}
+
+	protected  function filterVersion(string $output): int
+	{
+		if ('' !== $output
+			&& preg_match('#^(\d+)#', $output, $match)) {
+			$output = $match[1];
+		}
+		return intval($output);
+	}
+
+	protected  function filterTimestamp(string $output): int
+	{
+		if ('' !== $output) {
+			return (new \DateTimeImmutable($output))->getTimestamp();
+		} else {
+			return 0;
+		}
+	}
+
+	public function __construct(string $pem, int $mode = 1)
+	{
+		$this->mode = $mode;
+
+		// Simple
 		$this->pem = $pem;
 		$x509 = openssl_x509_parse($this->pem);
 		if (false === $x509) {
 			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->x509 = $x509;
+		$this->common_name = $this->x509['subject']['CN'] ?? '';
+		if (CERTIFICATE_DEFAULT > $this->mode) {
+			return;
+		}
 
+		// Default
 		$this->subject = $this->arrayToString($this->x509['subject']);
 		$this->issuer = $this->arrayToString($this->x509['issuer']);
 		$this->not_before = intval($this->x509['validFrom_time_t']);
 		$this->not_after = intval($this->x509['validTo_time_t']);
+		if (CERTIFICATE_EXTENDED > $this->mode) {
+			return;
+		}
+
+		// Extended
+		if (false === openssl_x509_export($pem, $text, FALSE)) {
+			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
+		}
+		$this->text = $text;
+
+		$this->version = $this->filterVersion($this->matchInLine('Version', $this->text));
+		$this->serial_number = $this->matchNextLine('Serial Number', $this->text);
+		$this->signature_algorithm = $this->matchInLine('Signature Algorithm', $this->text);
+		$this->alternative_names = $this->matchNextLine('X509v3 Subject Alternative Name', $this->text);
+		$this->public_key_algorithm = $this->matchInLine('Public Key Algorithm', $this->text);
+
+		if (false === ($fingerprint = openssl_x509_fingerprint($pem, 'sha1'))) {
+			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
+		}
+		$this->sha1_fingerprint = preg_replace('#(..)(?=..)#', '$1:', $fingerprint);
 	}
 
 	public function isValid(): bool
@@ -91,7 +172,17 @@ class Certificate extends Common
 
 	public function jsonSerialize(): mixed
 	{
-		return [
+		// Simple
+		$json = [
+			'common_name' => $this->common_name,
+			# 'raw' => $this->x509,
+		];
+		if (CERTIFICATE_DEFAULT > $this->mode) {
+			return $json;
+		}
+
+		// Default
+		foreach ([
 			'subject' => $this->subject,
 			'issuer' => $this->issuer,
 			'not_before' => [
@@ -102,7 +193,24 @@ class Certificate extends Common
 				'datetime' => (new \DateTimeImmutable("@{$this->not_after}"))->format(\DateTimeInterface::W3C),
 				'timestamp' => $this->not_after,
 			],
-			# 'raw' => $this->x509,
-		];
+		] as $key => $value) {
+			$json[$key] = $value;
+		}
+		if (CERTIFICATE_EXTENDED > $this->mode) {
+			return $json;
+		}
+
+		// Extended
+		foreach ([
+			'version' => $this->version,
+			'serial_number' => $this->serial_number,
+			'signature_algorithm' => $this->signature_algorithm,
+			'alternative_names' => $this->alternative_names,
+			'public_key_algorithm' => $this->public_key_algorithm,
+		] as $key => $value) {
+			$json[$key] = $value;
+		}
+
+		return $json;
 	}
 }

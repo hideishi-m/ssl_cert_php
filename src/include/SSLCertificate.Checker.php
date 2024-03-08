@@ -15,9 +15,9 @@ namespace SSLCertificate;
 class Checker extends Common
 {
 	protected int $status = CERTIFICATE_INVALID;
-	protected ExtendedCertificate $cert;
+	protected Certificate $cert;
 
-	protected function loadCertPath(string $cert_path): false|ExtendedCertificate
+	protected function loadCertPath(string $cert_path): false|Certificate
 	{
 		if (empty($cert_path)) {
 			$this->messages[] = 'Certificate file is not specified';
@@ -36,7 +36,7 @@ class Checker extends Common
 			return false;
 		}
 
-		return new ExtendedCertificate($pem);
+		return new Certificate($pem, CERTIFICATE_EXTENDED);
 	}
 
 	protected function checkCertificate(string $cert_path): bool
