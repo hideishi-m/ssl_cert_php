@@ -12,30 +12,6 @@
 
 namespace SSLCertificate;
 
-class SimpleCertificate extends Common
+class Exception extends \Exception
 {
-	protected string $pem;
-	protected array $x509;
-
-	public readonly string $common_name;
-
-	public function __construct(string $pem)
-	{
-		$this->pem = $pem;
-		$x509 = openssl_x509_parse($this->pem);
-		if (false === $x509) {
-			$this->messages[] = 'Certificate file is not valid';
-			return;
-		}
-		$this->x509 = $x509;
-
-		$this->common_name = $this->x509['subject']['CN'];
-	}
-	public function jsonSerialize(): mixed
-	{
-		return [
-			'common_name' => $this->common_name,
-			# 'raw' => $this->x509,
-		];
-	}
 }

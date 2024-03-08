@@ -39,8 +39,7 @@ class Certificate extends Common
 		$this->pem = $pem;
 		$x509 = openssl_x509_parse($this->pem);
 		if (false === $x509) {
-			$this->messages[] = 'Certificate file is not valid';
-			return;
+			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->x509 = $x509;
 

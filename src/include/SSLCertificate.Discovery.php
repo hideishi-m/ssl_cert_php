@@ -60,12 +60,14 @@ class Discovery extends Common
 			foreach ($file_info->getServerConfigs(false) as $server_conf) {
 				foreach ($server_conf->getServerCerts() as $server_cert) {
 					$pem = file_get_contents($server_cert['ssl_certificate']);
-					$cert = new SimpleCertificate($pem);
-					$this->certs[] = [
-						'{#SERVERNAME}' => $server_cert['server_name'],
-						'{#CERTNAME}' => $cert->common_name,
-						'{#CERTPATH}' => $server_cert['ssl_certificate'],
-					];
+					$x509 = openssl_x509_parse($pem);
+					if (false !== $x509) {
+						$this->certs[] = [
+							'{#SERVERNAME}' => $server_cert['server_name'],
+							'{#CERTNAME}' => $x509['subject']['CN'],
+							'{#CERTPATH}' => $server_cert['ssl_certificate'],
+						];
+					}
 				}
 			}
 		}

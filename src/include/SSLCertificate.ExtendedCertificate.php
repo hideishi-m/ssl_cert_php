@@ -66,10 +66,10 @@ class ExtendedCertificate extends Certificate
 		parent::__construct($pem);
 
 		if (false === openssl_x509_export($pem, $text, FALSE)) {
-			$this->messages[] = 'Certificate file is not valid';
-			return;
+			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->text = $text;
+
 		$this->version = $this->filterVersion($this->matchInLine('Version', $this->text));
 		$this->serial_number = $this->matchNextLine('Serial Number', $this->text);
 		$this->signature_algorithm = $this->matchInLine('Signature Algorithm', $this->text);
@@ -77,8 +77,7 @@ class ExtendedCertificate extends Certificate
 		$this->public_key_algorithm = $this->matchInLine('Public Key Algorithm', $this->text);
 
 		if (false === ($fingerprint = openssl_x509_fingerprint($pem, 'sha1'))) {
-			$this->messages[] = 'Certificate file is not valid';
-			return;
+			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->sha1_fingerprint = preg_replace('#(..)(?=..)#', '$1:', $fingerprint);
 	}
