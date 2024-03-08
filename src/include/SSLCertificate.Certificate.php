@@ -12,8 +12,11 @@
 
 namespace SSLCertificate;
 
-class Certificate extends SimpleCertificate
+class Certificate extends Common
 {
+	protected string $pem;
+	protected array $x509;
+
 	public readonly string $subject;
 	public readonly string $issuer;
 	public readonly int $not_before;
@@ -33,7 +36,13 @@ class Certificate extends SimpleCertificate
 
 	public function __construct(string $pem)
 	{
-		parent::__construct($pem);
+		$this->pem = $pem;
+		$x509 = openssl_x509_parse($this->pem);
+		if (false === $x509) {
+			$this->messages[] = 'Certificate file is not valid';
+			return;
+		}
+		$this->x509 = $x509;
 
 		$this->subject = $this->arrayToString($this->x509['subject']);
 		$this->issuer = $this->arrayToString($this->x509['issuer']);
@@ -83,8 +92,7 @@ class Certificate extends SimpleCertificate
 
 	public function jsonSerialize(): mixed
 	{
-		$json = parent::jsonSerialize();
-		foreach ([
+		return [
 			'subject' => $this->subject,
 			'issuer' => $this->issuer,
 			'not_before' => [
@@ -95,9 +103,7 @@ class Certificate extends SimpleCertificate
 				'datetime' => (new \DateTimeImmutable("@{$this->not_after}"))->format(\DateTimeInterface::W3C),
 				'timestamp' => $this->not_after,
 			],
-		] as $key => $value) {
-			$json[$key] = $value;
-		}
-		return $json;
+			# 'raw' => $this->x509,
+		];
 	}
 }
