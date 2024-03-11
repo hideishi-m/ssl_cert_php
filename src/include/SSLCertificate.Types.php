@@ -12,6 +12,8 @@
 
 namespace SSLCertificate;
 
+const VERSION = '1.0.0';
+
 enum CertificateStatus: string
 {
 	case SelfSigned = 'valid-but-self-signed';
