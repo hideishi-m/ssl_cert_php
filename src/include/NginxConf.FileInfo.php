@@ -32,14 +32,14 @@ namespace NginxConf;
 
 class FileInfo extends \SplFileInfo
 {
-	protected bool $_root_dir_loaded = false;
+	protected bool $root_dir_loaded = false;
 	protected string $root_dir = '';
-	protected bool $_server_configs_loaded = false;
+	protected bool $server_configs_loaded = false;
 	protected array $server_configs = [];
 
 	protected function loadRootDir(): void
 	{
-		if ($this->_root_dir_loaded) {
+		if ($this->root_dir_loaded) {
 			return;
 		}
 		$conf_path = $this->getPathname();
@@ -47,7 +47,7 @@ class FileInfo extends \SplFileInfo
 		if (false !== $pos) {
 			$this->root_dir = substr($conf_path, 0, $pos) . '/nginx';
 		}
-		$this->_root_dir_loaded = true;
+		$this->root_dir_loaded = true;
 	}
 
 	protected function appendServerConfig(array $block): void
@@ -58,7 +58,7 @@ class FileInfo extends \SplFileInfo
 
 	protected function loadServerConfigs(): void
 	{
-		if ($this->_server_configs_loaded) {
+		if ($this->server_configs_loaded) {
 			return;
 		}
 		$file_obj = $this->openFile('r');
@@ -67,8 +67,8 @@ class FileInfo extends \SplFileInfo
 			$has_server = false;
 			while (! $file_obj->eof()) {
 				$line = $file_obj->fgets();
-				$line = preg_replace(ServerConfig::COMMENT_PATTERN, '', $line);
-				if (preg_match(ServerConfig::SERVER_PATTERN, $line)) {
+				$line = ServerConfig::stripComment($line);
+				if (ServerConfig::startsServerBlock($line)) {
 					if ($has_server) {
 						$this->appendServerConfig($block);
 					}
@@ -83,7 +83,7 @@ class FileInfo extends \SplFileInfo
 				$this->appendServerConfig($block);
 			}
 		}
-		$this->_server_configs_loaded = true;
+		$this->server_configs_loaded = true;
 	}
 
 	public function getServerConfigs(): array

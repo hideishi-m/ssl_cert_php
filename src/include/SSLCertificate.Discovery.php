@@ -76,7 +76,7 @@ class Discovery implements \JsonSerializable
 		$filter_iterator = new \RecursiveRegexIterator($dir_iterator, '#\.conf$#');
 		$file_iterator = new \RecursiveIteratorIterator($filter_iterator);
 		foreach ($file_iterator as $file_info) {
-			foreach ($file_info->getServerConfigs(false) as $server_conf) {
+			foreach ($file_info->getServerConfigs() as $server_conf) {
 				foreach ($server_conf->getServerCerts() as $server_cert) {
 					$cert = $this->loadCertPath($server_cert['ssl_certificate'], CertificateMode::Simple);
 					if (! empty($cert->common_name)) {

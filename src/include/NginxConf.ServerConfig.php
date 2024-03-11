@@ -46,6 +46,16 @@ class ServerConfig implements \JsonSerializable
 	public readonly array $ssl_certs;
 	public readonly array $ssl_cert_keys;
 
+	public static function stripComment(string $line): string
+	{
+		return preg_replace(self::COMMENT_PATTERN, '', $line);
+	}
+
+	public static function startsServerBlock($line): bool
+	{
+		return (1 === preg_match(self::SERVER_PATTERN, $line));
+	}
+
 	protected function loadIncludeBlock(string $include): array
 	{
 		$block = [];
@@ -57,7 +67,7 @@ class ServerConfig implements \JsonSerializable
 			$file_obj = $file_info->openFile('r');
 			while (! $file_obj->eof()) {
 				$line = $file_obj->fgets();
-				$line = preg_replace(self::COMMENT_PATTERN, '', $line);
+				$line = self::stripComment($line);
 				if (! empty($line)) {
 					$block[] = $line;
 				}
