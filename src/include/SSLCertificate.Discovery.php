@@ -30,7 +30,7 @@
 
 namespace SSLCertificate;
 
-use \NginxConf\ConfigFile;
+use \NginxConfig\ConfigFile;
 
 class Discovery extends Bootstrap
 {

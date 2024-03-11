@@ -28,7 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace NginxConf;
+namespace NginxConfig;
 
 class ServerConfig implements \Countable, \IteratorAggregate, \JsonSerializable
 {
