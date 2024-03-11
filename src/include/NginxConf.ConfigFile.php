@@ -30,10 +30,8 @@
 
 namespace NginxConf;
 
-class ConfigFile implements \Countable, \Iterator
+class ConfigFile implements \Countable, \IteratorAggregate
 {
-	protected int $position;
-
 	protected string $config_path;
 	protected string $root_dir = '';
 	protected array $server_configs = [];
@@ -88,28 +86,8 @@ class ConfigFile implements \Countable, \Iterator
 		return count($this->server_configs);
 	}
 
-	public function current()
+	public function getIterator(): \Traversable
 	{
-		return $this->server_configs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->server_configs[$this->position]);
+		return new \ArrayIterator($this->server_configs);
 	}
 }

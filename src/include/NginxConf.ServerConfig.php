@@ -30,7 +30,7 @@
 
 namespace NginxConf;
 
-class ServerConfig implements \Countable, \Iterator, \JsonSerializable
+class ServerConfig implements \Countable, \IteratorAggregate, \JsonSerializable
 {
 	final const COMMENT_PATTERN = '/\s*((?<!\\\)#.*)?$/';
 	final const SERVER_PATTERN = '/^\s*server\s+{/';
@@ -148,29 +148,9 @@ class ServerConfig implements \Countable, \Iterator, \JsonSerializable
 		return count($this->server_certs);
 	}
 
-	public function current()
+	public function getIterator(): \Traversable
 	{
-		return $this->server_certs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->server_certs[$this->position]);
+		return new \ArrayIterator($this->server_certs);
 	}
 
 	public function jsonSerialize(): mixed
