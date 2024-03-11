@@ -91,7 +91,7 @@ class ServerConfig implements \JsonSerializable
 				$ssl_cert_keys[] = $match[1];
 			} elseif (preg_match(self::INCLUDE_PATTERN, $line, $match)) {
 				$include_block = self::loadIncludeBlock($match[1], $root_dir);
-					array_splice($this->block, $i, 1, $include_block);
+				array_splice($this->block, $i, 1, $include_block);
 				--$i;
 			}
 		}
