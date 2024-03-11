@@ -27,3 +27,17 @@ enum CertificateMode: int
 	case Default = 1;
 	case Extended = 2;
 }
+
+trait ErrorMessages
+{
+	protected array $messages = [];
+
+	public function getLastError(): string
+	{
+		if ($length = count($this->messages)) {
+			return $this->messages[$length - 1];
+		} else {
+			return '';
+		}
+	}
+}

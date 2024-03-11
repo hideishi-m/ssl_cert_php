@@ -12,8 +12,10 @@
 
 namespace SSLCertificate;
 
-class Certificate extends Common
+class Certificate implements \JsonSerializable
 {
+	use ErrorMessages;
+
 	protected CertificateMode $mode;
 
 	protected string $pem;

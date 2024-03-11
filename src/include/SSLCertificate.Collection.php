@@ -12,8 +12,10 @@
 
 namespace SSLCertificate;
 
-class Collection extends Common implements \Countable, \Iterator
+class Collection implements \Countable, \Iterator, \JsonSerializable
 {
+	use ErrorMessages;
+
 	protected int $position;
 
 	protected array $pems = [];

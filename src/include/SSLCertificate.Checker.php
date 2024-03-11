@@ -12,8 +12,10 @@
 
 namespace SSLCertificate;
 
-class Checker extends Common
+class Checker implements \JsonSerializable
 {
+	use ErrorMessages;
+
 	protected CertificateStatus $status = CertificateStatus::Invalid;
 	protected Certificate $cert;
 

@@ -12,8 +12,10 @@
 
 namespace SSLCertificate;
 
-class Verification extends Common
+class Verification implements \JsonSerializable
 {
+	use ErrorMessages;
+
 	protected CertificateStatus $status = CertificateStatus::Invalid;
 	protected array $chain = [];
 

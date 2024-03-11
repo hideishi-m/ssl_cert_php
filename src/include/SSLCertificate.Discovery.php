@@ -12,8 +12,10 @@
 
 namespace SSLCertificate;
 
-class Discovery extends Common
+class Discovery implements \JsonSerializable
 {
+	use ErrorMessages;
+
 	final const OS_FREEBSD = 'FreeBSD';
 	final const OS_LINUX = 'Linux';
 
