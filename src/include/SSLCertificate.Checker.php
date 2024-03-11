@@ -32,23 +32,32 @@ namespace SSLCertificate;
 
 class Checker implements \JsonSerializable
 {
-	use ErrorMessages, LoadCertificate;
+	use ErrorMessages, FilePath;
 
-	protected CertificateStatus $status = CertificateStatus::Invalid;
+	protected Status $status = Status::Invalid;
 	protected Certificate $cert;
+
+	protected function createFromCertPath(string $path): false|Certificate
+	{
+		$text = $this->readTextFromFilePath($path, 'Certificate file');
+		if (false === $text) {
+			return false;
+		}
+		return new Certificate($text, Mode::Extended);
+	}
 
 	protected function checkCertificate(string $cert_path): bool
 	{
-		$cert = $this->loadCertPath($cert_path, CertificateMode::Extended);
+		$cert = $this->createFromCertPath($cert_path);
 		if (false === $cert) {
 			return false;
 		}
 		$this->cert = $cert;
 		if ($cert->isValid()) {
 			if ($cert->isSelfSigned()) {
-				$this->status = CertificateStatus::SelfSigned;
+				$this->status = Status::SelfSigned;
 			} else {
-				$this->status = CertificateStatus::Valid;
+				$this->status = Status::Valid;
 			}
 		}
 		return true;

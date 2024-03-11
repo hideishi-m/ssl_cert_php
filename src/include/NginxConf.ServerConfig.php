@@ -59,7 +59,7 @@ class ServerConfig implements \Countable, \Iterator, \JsonSerializable
 		return (1 === preg_match(self::SERVER_PATTERN, $line));
 	}
 
-	protected function loadIncludeBlock(string $include): array
+	protected function getIncludeBlock(string $include): array
 	{
 		$block = [];
 		if (0 !== strpos($include, '/')) {
@@ -119,7 +119,7 @@ class ServerConfig implements \Countable, \Iterator, \JsonSerializable
 			} elseif (preg_match(self::SSL_CERT_KEY_PATTERN, $line, $match)) {
 				$ssl_cert_keys[] = $match[1];
 			} elseif (preg_match(self::INCLUDE_PATTERN, $line, $match)) {
-				$include_block = self::loadIncludeBlock($match[1], $root_dir);
+				$include_block = self::getIncludeBlock($match[1], $root_dir);
 				array_splice($this->block, $i, 1, $include_block);
 				--$i;
 			}

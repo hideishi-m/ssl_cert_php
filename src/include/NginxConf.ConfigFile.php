@@ -38,7 +38,7 @@ class ConfigFile implements \Countable, \Iterator
 	protected string $root_dir = '';
 	protected array $server_configs = [];
 
-	protected function loadRootDir(): void
+	protected function getRootDir(): void
 	{
 		$pos = strpos($this->config_path, '/nginx/conf.d/');
 		if (false !== $pos) {
@@ -51,7 +51,7 @@ class ConfigFile implements \Countable, \Iterator
 		$this->server_configs[] = new ServerConfig($block, $this->root_dir);
 	}
 
-	protected function loadServerConfigs(): void
+	protected function readServerConfigs(): void
 	{
 		$lines = file($this->config_path);
 		if (false !== $lines) {
@@ -79,8 +79,8 @@ class ConfigFile implements \Countable, \Iterator
 	public function __construct(string $config_path)
 	{
 		$this->config_path = $config_path;
-		$this->loadRootDir();
-		$this->loadServerConfigs();
+		$this->getRootDir();
+		$this->readServerConfigs();
 	}
 
 	public function count(): int

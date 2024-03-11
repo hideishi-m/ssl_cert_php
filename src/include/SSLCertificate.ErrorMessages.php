@@ -30,71 +30,16 @@
 
 namespace SSLCertificate;
 
-class Collection implements \Countable, \Iterator, \JsonSerializable
+trait ErrorMessages
 {
-	use ErrorMessages;
+	protected array $messages = [];
 
-	protected int $position;
-
-	protected array $pems = [];
-	protected array $certs = [];
-
-	public function search(string $key, mixed $value): false|Certificate
+	public function getLastError(): string
 	{
-		foreach ($this as $index => $cert) {
-			if (property_exists($cert, $key)
-				&& $value === $cert->{$key}) {
-				return $cert;
-			}
-		}
-		return false;
-	}
-
-	public function __construct(string $pem, $mode = Mode::Default)
-	{
-		$this->position = 0;
-		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
-			$this->messages[] = 'Certificate file is not valid';
+		if ($length = count($this->messages)) {
+			return $this->messages[$length - 1];
 		} else {
-			$this->pems = $matches[0];
-			foreach ($this->pems as $pem) {
-				$this->certs[] = new Certificate($pem, $mode);
-			}
+			return '';
 		}
-	}
-
-	public function count(): int
-	{
-		return count($this->certs);
-	}
-
-	public function current()
-	{
-		return $this->certs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->certs[$this->position]);
-	}
-
-	public function jsonSerialize(): mixed
-	{
-		return $this->certs;
 	}
 }

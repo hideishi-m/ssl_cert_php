@@ -30,71 +30,29 @@
 
 namespace SSLCertificate;
 
-class Collection implements \Countable, \Iterator, \JsonSerializable
+trait FilePath
 {
 	use ErrorMessages;
 
-	protected int $position;
-
-	protected array $pems = [];
-	protected array $certs = [];
-
-	public function search(string $key, mixed $value): false|Certificate
+	protected function readTextFromFilePath(string $path, string $description = 'File'): false|string
 	{
-		foreach ($this as $index => $cert) {
-			if (property_exists($cert, $key)
-				&& $value === $cert->{$key}) {
-				return $cert;
-			}
+		if (empty($path)) {
+			$this->messages[] = "{$description} is not specified";
+			return false;
+		} elseif (! is_file($path)) {
+			$this->messages[] = "{$description} does not exist";
+			return false;
+		} elseif (! is_readable($path)) {
+			$this->messages[] = "{$description} is not readable";
+			return false;
 		}
-		return false;
-	}
 
-	public function __construct(string $pem, $mode = Mode::Default)
-	{
-		$this->position = 0;
-		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
-			$this->messages[] = 'Certificate file is not valid';
-		} else {
-			$this->pems = $matches[0];
-			foreach ($this->pems as $pem) {
-				$this->certs[] = new Certificate($pem, $mode);
-			}
+		$text = file_get_contents($path);
+		if (empty($text)) {
+			$this->messages[] = "{$description} is not valid";
+			return false;
 		}
-	}
 
-	public function count(): int
-	{
-		return count($this->certs);
-	}
-
-	public function current()
-	{
-		return $this->certs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->certs[$this->position]);
-	}
-
-	public function jsonSerialize(): mixed
-	{
-		return $this->certs;
+		return $text;
 	}
 }

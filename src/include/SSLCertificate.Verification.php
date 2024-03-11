@@ -32,9 +32,9 @@ namespace SSLCertificate;
 
 class Verification implements \JsonSerializable
 {
-	use ErrorMessages, LoadCertificate;
+	use ErrorMessages, FilePath;
 
-	protected CertificateStatus $status = CertificateStatus::Invalid;
+	protected Status $status = Status::Invalid;
 	protected array $chain = [];
 
 	protected function getCACertsPath(): string
@@ -42,14 +42,18 @@ class Verification implements \JsonSerializable
 		return openssl_get_cert_locations()['default_cert_file'];
 	}
 
-	protected function loadCertsPath($certs_path): false|Collection
+	protected function createFromCertPath($path): false|Collection
 	{
-		return $this->loadCertPath($certs_path, CertificateMode::Default, Collection::class);
+		$text = $this->readTextFromFilePath($path);
+		if (false === $text) {
+			return false;
+		}
+		return new Collection($text, Mode::Default);
 	}
 
 	protected function verifyChain(string $chain_path, string $ca_path): bool
 	{
-		$chain_certs = $this->loadCertsPath($chain_path);
+		$chain_certs = $this->createFromCertPath($chain_path);
 		if (false === $chain_certs) {
 			return false;
 		}
@@ -75,7 +79,7 @@ class Verification implements \JsonSerializable
 			];
 		}
 
-		$ca_certs = $this->loadCertsPath($ca_path);
+		$ca_certs = $this->createFromCertPath($ca_path);
 		if (false === $ca_certs) {
 			return false;
 		}
@@ -88,10 +92,10 @@ class Verification implements \JsonSerializable
 				$this->chain[count($this->chain) - 1]['signed_x509'] = $signed_cert;
 				$this->chain[count($this->chain) - 1]['verified'] = true;
 				if ($subject_cert->isSelfSigned()) {
-					$this->status = CertificateStatus::SelfSigned;
+					$this->status = Status::SelfSigned;
 					return true;
 				} else {
-					$this->status = CertificateStatus::Valid;
+					$this->status = Status::Valid;
 					return true;
 				}
 			} else {

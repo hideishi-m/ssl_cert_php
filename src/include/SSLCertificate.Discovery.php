@@ -34,7 +34,7 @@ use \NginxConf\ConfigFile;
 
 class Discovery implements \JsonSerializable
 {
-	use ErrorMessages, LoadCertificate;
+	use ErrorMessages, DirectoryPath, FilePath;
 
 	final const OS_FREEBSD = 'FreeBSD';
 	final const OS_LINUX = 'Linux';
@@ -60,27 +60,27 @@ class Discovery implements \JsonSerializable
 		}
 	}
 
+	protected function createFromCertPath(string $path): false|Certificate
+	{
+		$text = $this->readTextFromFilePath($path, 'Certificate file');
+		if (false === $text) {
+			return false;
+		}
+		return new Certificate($text, Mode::Simple);
+	}
+
 	protected function discoverNginxConfDir(string $conf_dir): bool
 	{
-		if (empty($conf_dir)) {
-			$this->messages[] = 'Configuration directory is not specified';
-			return false;
-		} elseif (! is_dir($conf_dir)) {
-			$this->messages[] = 'Configuration directory does not exist';
-			return false;
-		} elseif (! is_readable($conf_dir)) {
-			$this->messages[] = 'Configuration directory is not readable';
+		$iterator = $this->getIteratorFromDirectoryPath($conf_dir, '#\.conf$#', 'Configuration directory');
+		if (false === $iterator) {
 			return false;
 		}
 
-		$dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
-		$filter_iterator = new \RecursiveRegexIterator($dir_iterator, '#\.conf$#');
-		$file_iterator = new \RecursiveIteratorIterator($filter_iterator);
-		foreach ($file_iterator as $file_info) {
+		foreach ($iterator as $file_info) {
 			$config_file = new ConfigFile($file_info->getPathname());
 			foreach ($config_file as $server_conf) {
 				foreach ($server_conf as $server_cert) {
-					$cert = $this->loadCertPath($server_cert['ssl_certificate'], CertificateMode::Simple);
+					$cert = $this->createFromCertPath($server_cert['ssl_certificate'], Mode::Simple);
 					if (! empty($cert->common_name)) {
 						$this->certs[] = [
 							'{#SERVERNAME}' => $server_cert['server_name'],

@@ -34,7 +34,7 @@ class Certificate implements \JsonSerializable
 {
 	use ErrorMessages;
 
-	protected CertificateMode $mode;
+	protected Mode $mode;
 
 	protected string $pem;
 	protected array $x509;
@@ -107,7 +107,7 @@ class Certificate implements \JsonSerializable
 		}
 	}
 
-	public function __construct(string $pem, CertificateMode $mode = CertificateMode::Default)
+	public function __construct(string $pem, Mode $mode = Mode::Default)
 	{
 		$this->mode = $mode;
 
@@ -119,7 +119,7 @@ class Certificate implements \JsonSerializable
 		}
 		$this->x509 = $x509;
 		$this->common_name = $this->x509['subject']['CN'] ?? '';
-		if (CertificateMode::Default->value > $this->mode) {
+		if (Mode::Default->value > $this->mode) {
 			return;
 		}
 
@@ -128,7 +128,7 @@ class Certificate implements \JsonSerializable
 		$this->issuer = $this->arrayToString($this->x509['issuer']);
 		$this->not_before = intval($this->x509['validFrom_time_t']);
 		$this->not_after = intval($this->x509['validTo_time_t']);
-		if (CertificateMode::Extended->value > $this->mode) {
+		if (Mode::Extended->value > $this->mode) {
 			return;
 		}
 
@@ -197,7 +197,7 @@ class Certificate implements \JsonSerializable
 			'common_name' => $this->common_name,
 			# 'raw' => $this->x509,
 		];
-		if (CertificateMode::Default->value > $this->mode) {
+		if (Mode::Default->value > $this->mode) {
 			return $json;
 		}
 
@@ -216,7 +216,7 @@ class Certificate implements \JsonSerializable
 		] as $key => $value) {
 			$json[$key] = $value;
 		}
-		if (CertificateMode::Extended->value > $this->mode) {
+		if (Mode::Extended->value > $this->mode) {
 			return $json;
 		}
 

@@ -32,61 +32,16 @@ namespace SSLCertificate;
 
 const VERSION = '1.0.0';
 
-enum CertificateStatus: string
+enum Status: string
 {
 	case SelfSigned = 'valid-but-self-signed';
 	case Invalid = 'invalid';
 	case Valid = 'valid';
 }
 
-enum CertificateMode: int
+enum Mode: int
 {
 	case Simple = 0;
 	case Default = 1;
 	case Extended = 2;
-}
-
-trait ErrorMessages
-{
-	protected array $messages = [];
-
-	public function getLastError(): string
-	{
-		if ($length = count($this->messages)) {
-			return $this->messages[$length - 1];
-		} else {
-			return '';
-		}
-	}
-}
-
-trait LoadCertificate
-{
-	use ErrorMessages;
-
-	protected function loadCertPath(
-		string $cert_path,
-		CertificateMode $cert_mode = CertificateMode::Default,
-		string $class = Certificate::class
-	): false|Certificate|Collection
-	{
-		if (empty($cert_path)) {
-			$this->messages[] = 'Certificate file is not specified';
-			return false;
-		} elseif (! is_file($cert_path)) {
-			$this->messages[] = 'Certificate file does not exist';
-			return false;
-		} elseif (! is_readable($cert_path)) {
-			$this->messages[] = 'Certificate file is not readable';
-			return false;
-		}
-
-		$pem = file_get_contents($cert_path);
-		if (empty($pem)) {
-			$this->messages[] = 'Certificate file is not valid';
-			return false;
-		}
-
-		return new $class($pem, $cert_mode);
-	}
 }
