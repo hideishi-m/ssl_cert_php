@@ -14,7 +14,7 @@ namespace SSLCertificate;
 
 class Certificate extends Common
 {
-	protected int $mode;
+	protected CertificateMode $mode;
 
 	protected string $pem;
 	protected array $x509;
@@ -87,7 +87,7 @@ class Certificate extends Common
 		}
 	}
 
-	public function __construct(string $pem, int $mode = 1)
+	public function __construct(string $pem, CertificateMode $mode = CertificateMode::Default)
 	{
 		$this->mode = $mode;
 
@@ -99,7 +99,7 @@ class Certificate extends Common
 		}
 		$this->x509 = $x509;
 		$this->common_name = $this->x509['subject']['CN'] ?? '';
-		if (CERTIFICATE_DEFAULT > $this->mode) {
+		if (CertificateMode::Default->value > $this->mode) {
 			return;
 		}
 
@@ -108,7 +108,7 @@ class Certificate extends Common
 		$this->issuer = $this->arrayToString($this->x509['issuer']);
 		$this->not_before = intval($this->x509['validFrom_time_t']);
 		$this->not_after = intval($this->x509['validTo_time_t']);
-		if (CERTIFICATE_EXTENDED > $this->mode) {
+		if (CertificateMode::Extended->value > $this->mode) {
 			return;
 		}
 
@@ -177,7 +177,7 @@ class Certificate extends Common
 			'common_name' => $this->common_name,
 			# 'raw' => $this->x509,
 		];
-		if (CERTIFICATE_DEFAULT > $this->mode) {
+		if (CertificateMode::Default->value > $this->mode) {
 			return $json;
 		}
 
@@ -196,7 +196,7 @@ class Certificate extends Common
 		] as $key => $value) {
 			$json[$key] = $value;
 		}
-		if (CERTIFICATE_EXTENDED > $this->mode) {
+		if (CertificateMode::Extended->value > $this->mode) {
 			return $json;
 		}
 

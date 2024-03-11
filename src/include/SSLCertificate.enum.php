@@ -12,18 +12,16 @@
 
 namespace SSLCertificate;
 
-const VERSION = '1.0.0';
+enum CertificateStatus: string
+{
+	case SelfSigned = 'valid-but-self-signed';
+	case Invalid = 'invalid';
+	case Valid = 'valid';
+}
 
-const CERTIFICATE_SELF_SIGNED = -1;
-const CERTIFICATE_INVALID = 0;
-const CERTIFICATE_VALID = 1;
-
-const CERTIFICATE_STATUS = [
-	CERTIFICATE_SELF_SIGNED => 'valid-but-self-signed',
-	CERTIFICATE_INVALID => 'invalid',
-	CERTIFICATE_VALID => 'valid',
-];
-
-const CERTIFICATE_SIMPLE = 0;
-const CERTIFICATE_DEFAULT = 1;
-const CERTIFICATE_EXTENDED = 2;
+enum CertificateMode: int
+{
+	case Simple = 0;
+	case Default = 1;
+	case Extended = 2;
+}

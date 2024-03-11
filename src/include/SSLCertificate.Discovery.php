@@ -42,7 +42,7 @@ class Discovery extends Common
 			return false;
 		}
 
-		return new Certificate($pem, CERTIFICATE_SIMPLE);
+		return new Certificate($pem, CertificateMode::Simple);
 	}
 
 	protected function getDefaultNginxConfDir(): string

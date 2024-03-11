@@ -14,7 +14,7 @@ namespace SSLCertificate;
 
 class Verification extends Common
 {
-	protected int $status = CERTIFICATE_INVALID;
+	protected CertificateStatus $status = CertificateStatus::Invalid;
 	protected array $chain = [];
 
 	protected function getCACertsPath(): string
@@ -85,10 +85,10 @@ class Verification extends Common
 				$this->chain[count($this->chain) - 1]['signed_x509'] = $signed_cert;
 				$this->chain[count($this->chain) - 1]['verified'] = true;
 				if ($subject_cert->isSelfSigned()) {
-					$this->status = CERTIFICATE_SELF_SIGNED;
+					$this->status = CertificateStatus::SelfSigned;
 					return true;
 				} else {
-					$this->status = CERTIFICATE_VALID;
+					$this->status = CertificateStatus::Valid;
 					return true;
 				}
 			} else {
@@ -117,7 +117,7 @@ class Verification extends Common
 		return [
 			'version' => VERSION,
 			'result' => [
-				'value' => CERTIFICATE_STATUS[$this->status],
+				'value' => $this->status->value,
 				'message' => $this->getLastError(),
 			],
 			'chain' => $this->chain,
