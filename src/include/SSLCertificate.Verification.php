@@ -109,7 +109,7 @@ class Verification extends Common
 		} catch (\Exception $e) {
 			error_log($e);
 		}
-		echo json_encode($this);
+		echo json_encode($this, JSON_UNESCAPED_SLASHES);
 	}
 
 	public function jsonSerialize(): mixed
