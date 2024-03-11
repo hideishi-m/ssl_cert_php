@@ -39,6 +39,17 @@ class Collection implements \Countable, \Iterator, \JsonSerializable
 	protected array $pems = [];
 	protected array $certs = [];
 
+	public function search(string $key, mixed $value): false|Certificate
+	{
+		foreach ($this as $index => $cert) {
+			if (property_exists($cert, $key)
+				&& $value === $cert->{$key}) {
+				return $cert;
+			}
+		}
+		return false;
+	}
+
 	public function __construct(string $pem, $mode = CertificateMode::Default)
 	{
 		$this->position = 0;
@@ -52,25 +63,9 @@ class Collection implements \Countable, \Iterator, \JsonSerializable
 		}
 	}
 
-	public function search(string $key, mixed $value): false|Certificate
-	{
-		foreach ($this as $index => $cert) {
-			if (property_exists($cert, $key)
-				&& $value === $cert->{$key}) {
-				return $cert;
-			}
-		}
-		return false;
-	}
-
 	public function count(): int
 	{
 		return count($this->certs);
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
 	}
 
 	public function current()
@@ -88,9 +83,14 @@ class Collection implements \Countable, \Iterator, \JsonSerializable
 		++$this->position;
 	}
 
+	public function rewind(): void
+	{
+		$this->position = 0;
+	}
+
 	public function valid(): bool
 	{
-		return isset($this->pems[$this->position]);
+		return isset($this->certs[$this->position]);
 	}
 
 	public function jsonSerialize(): mixed

@@ -30,43 +30,34 @@
 
 namespace NginxConf;
 
-class FileInfo extends \SplFileInfo
+class ConfigFile implements \Countable, \Iterator
 {
-	protected bool $root_dir_loaded = false;
+	protected int $position;
+
+	protected string $config_path;
 	protected string $root_dir = '';
-	protected bool $server_configs_loaded = false;
 	protected array $server_configs = [];
 
 	protected function loadRootDir(): void
 	{
-		if ($this->root_dir_loaded) {
-			return;
-		}
-		$conf_path = $this->getPathname();
-		$pos = strpos($conf_path, '/nginx/conf.d/');
+		$pos = strpos($this->config_path, '/nginx/conf.d/');
 		if (false !== $pos) {
-			$this->root_dir = substr($conf_path, 0, $pos) . '/nginx';
+			$this->root_dir = substr($this->config_path, 0, $pos) . '/nginx';
 		}
-		$this->root_dir_loaded = true;
 	}
 
 	protected function appendServerConfig(array $block): void
 	{
-		$this->loadRootDir();
 		$this->server_configs[] = new ServerConfig($block, $this->root_dir);
 	}
 
 	protected function loadServerConfigs(): void
 	{
-		if ($this->server_configs_loaded) {
-			return;
-		}
-		$file_obj = $this->openFile('r');
-		if ($file_obj) {
+		$lines = file($this->config_path);
+		if (false !== $lines) {
 			$block = [];
 			$has_server = false;
-			while (! $file_obj->eof()) {
-				$line = $file_obj->fgets();
+			foreach ($lines as $line) {
 				$line = ServerConfig::stripComment($line);
 				if (ServerConfig::startsServerBlock($line)) {
 					if ($has_server) {
@@ -83,12 +74,42 @@ class FileInfo extends \SplFileInfo
 				$this->appendServerConfig($block);
 			}
 		}
-		$this->server_configs_loaded = true;
 	}
 
-	public function getServerConfigs(): array
+	public function __construct(string $config_path)
 	{
+		$this->config_path = $config_path;
+		$this->loadRootDir();
 		$this->loadServerConfigs();
-		return $this->server_configs;
+	}
+
+	public function count(): int
+	{
+		return count($this->server_configs);
+	}
+
+	public function current()
+	{
+		return $this->server_configs[$this->position];
+	}
+
+	public function key()
+	{
+		return $this->position;
+	}
+
+	public function next(): void
+	{
+		++$this->position;
+	}
+
+	public function rewind(): void
+	{
+		$this->position = 0;
+	}
+
+	public function valid(): bool
+	{
+		return isset($this->server_configs[$this->position]);
 	}
 }

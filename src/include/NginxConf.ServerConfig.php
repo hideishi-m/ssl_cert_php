@@ -30,7 +30,7 @@
 
 namespace NginxConf;
 
-class ServerConfig implements \JsonSerializable
+class ServerConfig implements \Countable, \Iterator, \JsonSerializable
 {
 	final const COMMENT_PATTERN = '/\s*((?<!\\\)#.*)?$/';
 	final const SERVER_PATTERN = '/^\s*server\s+{/';
@@ -39,12 +39,15 @@ class ServerConfig implements \JsonSerializable
 	final const SSL_CERT_KEY_PATTERN = '/^\s*ssl_certificate_key\s+([^\s;]+)\s*;/';
 	final const INCLUDE_PATTERN = '/^\s*include\s+([^\s;]+)\s*;/';
 
+	protected int $position;
+
 	protected array $block;
 	protected string $root_dir;
 
 	public readonly array $server_names;
 	public readonly array $ssl_certs;
 	public readonly array $ssl_cert_keys;
+	public readonly array $server_certs;
 
 	public static function stripComment(string $line): string
 	{
@@ -83,7 +86,6 @@ class ServerConfig implements \JsonSerializable
 
 	public function getServerCerts(): array
 	{
-		$server_certs = [];
 		if (! empty($this->server_names)
 			&& ! empty($this->ssl_certs)) {
 			$server_name = $this->server_names[0];
@@ -94,7 +96,6 @@ class ServerConfig implements \JsonSerializable
 				];
 			}
 		}
-		return $server_certs;
 	}
 
 	public function __construct(array $block, string $root_dir)
@@ -124,13 +125,56 @@ class ServerConfig implements \JsonSerializable
 			}
 		}
 
+		$server_certs = [];
+		if (! empty($server_names)
+			&& ! empty($ssl_certs)) {
+			$server_name = $server_names[0];
+			foreach ($ssl_certs as $ssl_cert) {
+				$server_certs[] = [
+					'server_name' => $server_name,
+					'ssl_certificate' => $ssl_cert,
+				];
+			}
+		}
+
 		$this->server_names = $server_names;
 		$this->ssl_certs = $ssl_certs;
 		$this->ssl_cert_keys = $ssl_cert_keys;
+		$this->server_certs = $server_certs;
+	}
+
+	public function count(): int
+	{
+		return count($this->server_certs);
+	}
+
+	public function current()
+	{
+		return $this->server_certs[$this->position];
+	}
+
+	public function key()
+	{
+		return $this->position;
+	}
+
+	public function next(): void
+	{
+		++$this->position;
+	}
+
+	public function rewind(): void
+	{
+		$this->position = 0;
+	}
+
+	public function valid(): bool
+	{
+		return isset($this->server_certs[$this->position]);
 	}
 
 	public function jsonSerialize(): mixed
 	{
-		return $this->getServerCerts();
+		return $this->server_certs;
 	}
 }

@@ -30,6 +30,8 @@
 
 namespace SSLCertificate;
 
+use \NginxConf\ConfigFile;
+
 class Discovery implements \JsonSerializable
 {
 	use ErrorMessages, LoadCertificate;
@@ -72,12 +74,12 @@ class Discovery implements \JsonSerializable
 		}
 
 		$dir_iterator = new \RecursiveDirectoryIterator($conf_dir);
-		$dir_iterator->setInfoClass(\NginxConf\FileInfo::class);
 		$filter_iterator = new \RecursiveRegexIterator($dir_iterator, '#\.conf$#');
 		$file_iterator = new \RecursiveIteratorIterator($filter_iterator);
 		foreach ($file_iterator as $file_info) {
-			foreach ($file_info->getServerConfigs() as $server_conf) {
-				foreach ($server_conf->getServerCerts() as $server_cert) {
+			$config_file = new ConfigFile($file_info->getPathname());
+			foreach ($config_file as $server_conf) {
+				foreach ($server_conf as $server_cert) {
 					$cert = $this->loadCertPath($server_cert['ssl_certificate'], CertificateMode::Simple);
 					if (! empty($cert->common_name)) {
 						$this->certs[] = [
