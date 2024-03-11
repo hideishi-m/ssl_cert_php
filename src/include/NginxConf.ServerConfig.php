@@ -54,7 +54,7 @@ class ServerConfig implements \Countable, \IteratorAggregate, \JsonSerializable
 		return preg_replace(self::COMMENT_PATTERN, '', $line);
 	}
 
-	public static function startsServerBlock($line): bool
+	public static function startsServerBlock(string $line): bool
 	{
 		return (1 === preg_match(self::SERVER_PATTERN, $line));
 	}

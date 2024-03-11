@@ -30,7 +30,7 @@
 
 namespace SSLCertificate;
 
-class Collection implements \Countable, \Iterator, \JsonSerializable
+class Collection implements \Countable, \IteratorAggregate, \JsonSerializable
 {
 	use ErrorMessages;
 
@@ -68,29 +68,9 @@ class Collection implements \Countable, \Iterator, \JsonSerializable
 		return count($this->certs);
 	}
 
-	public function current()
+	public function getIterator(): \Iterator
 	{
-		return $this->certs[$this->position];
-	}
-
-	public function key()
-	{
-		return $this->position;
-	}
-
-	public function next(): void
-	{
-		++$this->position;
-	}
-
-	public function rewind(): void
-	{
-		$this->position = 0;
-	}
-
-	public function valid(): bool
-	{
-		return isset($this->certs[$this->position]);
+		return new \ArrayIterator($this->certs);
 	}
 
 	public function jsonSerialize(): mixed

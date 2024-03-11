@@ -30,57 +30,30 @@
 
 namespace SSLCertificate;
 
-class Checker extends Bootstrap
+abstract class Bootstrap implements \JsonSerializable
 {
-	use ErrorMessages, FilePath;
+	final const JSON_FLAGS = JSON_UNESCAPED_SLASHES;
 
-	protected Status $status = Status::Invalid;
-	protected Certificate $cert;
-
-	protected function createFromCertPath(string $path): false|Certificate
+	final public static function run(array $argv): void
 	{
-		$text = $this->readTextFromFilePath($path, 'Certificate file');
-		if (false === $text) {
-			return false;
-		}
-		return new Certificate($text, Mode::Extended);
+		$class = get_called_class();
+		$object = new $class();
+		$code = $object->bootstrap($argv);
+		exit($code);
 	}
 
-	protected function checkCertificate(string $cert_path): bool
+	final protected function bootstrap(array $argv): int
 	{
-		$cert = $this->createFromCertPath($cert_path);
-		if (false === $cert) {
-			return false;
+		$code = 0;
+		try {
+			$code = $this->process($argv) ? 0 : 1;
+		} catch (Exception $e) {
+			error_log($e);
+			$code = 255;
 		}
-		$this->cert = $cert;
-		if ($cert->isValid()) {
-			if ($cert->isSelfSigned()) {
-				$this->status = Status::SelfSigned;
-			} else {
-				$this->status = Status::Valid;
-			}
-		}
-		return true;
+		echo json_encode($this, self::JSON_FLAGS);
+		return $code;
 	}
 
-	protected function process(array $argv): bool
-	{
-		return $this->checkCertificate($argv[1] ?? '');
-	}
-
-	public function jsonSerialize(): mixed
-	{
-		$json = [
-			'version' => VERSION,
-			'result' => [
-				'value' => $this->status->value,
-				'message' => $this->getLastError(),
-			],
-		];
-		if (! empty($this->cert)) {
-			$json['x509'] = $this->cert;
-			$json['sha1_fingerprint'] = $this->cert->sha1_fingerprint;
-		}
-		return $json;
-	}
+	protected abstract function process(array $argv): bool;
 }

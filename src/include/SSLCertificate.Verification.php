@@ -30,19 +30,23 @@
 
 namespace SSLCertificate;
 
-class Verification implements \JsonSerializable
+class Verification extends Bootstrap
 {
 	use ErrorMessages, FilePath;
 
 	protected Status $status = Status::Invalid;
 	protected array $chain = [];
 
-	protected function getCACertsPath(): string
+	protected function getDefaultCACertsPath(string $ca_path): string
 	{
-		return openssl_get_cert_locations()['default_cert_file'];
+		if (!empty($ca_path)) {
+			return $ca_path;
+		} else {
+			return openssl_get_cert_locations()['default_cert_file'];
+		}
 	}
 
-	protected function createFromCertPath($path): false|Collection
+	protected function createFromCertPath(string $path): false|Collection
 	{
 		$text = $this->readTextFromFilePath($path);
 		if (false === $text) {
@@ -108,15 +112,10 @@ class Verification implements \JsonSerializable
 		return false;
 	}
 
-	public function __construct(string $chain_path, string $ca_path)
+	protected function process(array $argv): bool
 	{
-		try {
-			$ca_path = $ca_path ?: $this->getCACertsPath();
-			$this->verifyChain($chain_path, $ca_path);
-		} catch (\Exception $e) {
-			error_log($e);
-		}
-		echo json_encode($this, JSON_UNESCAPED_SLASHES);
+		$ca_path = $this->getDefaultCACertsPath($argv[2] ?? '');
+		return $this->verifyChain($argv[1] ?? '', $ca_path);
 	}
 
 	public function jsonSerialize(): mixed

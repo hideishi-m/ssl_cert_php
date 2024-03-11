@@ -13,4 +13,4 @@
 require_once __DIR__ . '/include/autoload.php';
 
 global $argv;
-new \SSLCertificate\Verification($argv[1] ?? '', $argv[2] ?? '');
+\SSLCertificate\Verification::run($argv);

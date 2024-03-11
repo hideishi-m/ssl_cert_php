@@ -32,7 +32,7 @@ namespace SSLCertificate;
 
 use \NginxConf\ConfigFile;
 
-class Discovery implements \JsonSerializable
+class Discovery extends Bootstrap
 {
 	use ErrorMessages, DirectoryPath, FilePath;
 
@@ -45,9 +45,11 @@ class Discovery implements \JsonSerializable
 
 	protected array $certs = [];
 
-	protected function getDefaultNginxConfDir(): string
+	protected function getDefaultNginxConfDir(string $conf_dir): string
 	{
-		if (self::OS_FREEBSD === PHP_OS) {
+		if (! empty($conf_dir)) {
+			return $conf_dir;
+		} elseif (self::OS_FREEBSD === PHP_OS) {
 			return self::CONF_DIR_FREEBSD;
 		} elseif (self::OS_LINUX === PHP_OS) {
 			if (false === strpos(PHP_PREFIX, '/kusanagi/')) {
@@ -75,7 +77,6 @@ class Discovery implements \JsonSerializable
 		if (false === $iterator) {
 			return false;
 		}
-
 		foreach ($iterator as $file_info) {
 			$config_file = new ConfigFile($file_info->getPathname());
 			foreach ($config_file as $server_conf) {
@@ -95,15 +96,10 @@ class Discovery implements \JsonSerializable
 		return true;
 	}
 
-	public function __construct(string $conf_dir)
+	protected function process(array $argv): bool
 	{
-		try {
-			$conf_dir = $conf_dir ?: $this->getDefaultNginxConfDir();
-			$this->discoverNginxConfDir($conf_dir);
-		} catch (\Exception $e) {
-			error_log($e);
-		}
-		echo json_encode($this, JSON_UNESCAPED_SLASHES);
+		$conf_dir = $this->getDefaultNginxConfDir($argv[1] ?? '');
+		return $this->discoverNginxConfDir($conf_dir);
 	}
 
 	public function jsonSerialize(): mixed
