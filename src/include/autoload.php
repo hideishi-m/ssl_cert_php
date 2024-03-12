@@ -28,15 +28,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+require_once __DIR__ . '/Bootstrap.autoload.php';
+require_once __DIR__ . '/SSLCertificate.autoload.php';
+
 spl_autoload_register(function (string $class) {
-	$pos = strpos($class, '\\');
-	if (0 < $pos) {
-		$namespace = substr($class, 0, $pos);
-		$file = __DIR__ . '/' . $namespace . '.Types.php';
-		if (file_exists($file)) {
-			require_once $file;
-		}
-	}
 	$file = __DIR__ . '/' . str_replace('\\', '.', $class) . '.php';
 	if (file_exists($file)) {
 		require_once $file;

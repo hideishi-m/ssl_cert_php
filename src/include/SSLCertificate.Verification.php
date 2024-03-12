@@ -30,7 +30,9 @@
 
 namespace SSLCertificate;
 
-class Verification extends Bootstrap
+use \Bootstrap\Skeleton;
+
+class Verification extends Skeleton
 {
 	use ErrorMessages, FilePath;
 
@@ -112,10 +114,12 @@ class Verification extends Bootstrap
 		return false;
 	}
 
-	protected function process(array $argv): bool
+	protected function process(array $args): bool
 	{
-		$ca_path = $this->getDefaultCACertsPath($argv[2] ?? '');
-		return $this->verifyChain($argv[1] ?? '', $ca_path);
+		$chain_path = $args[0] ?? '';
+		$ca_path = $args[1] ?? '';
+		$ca_path = $this->getDefaultCACertsPath($ca_path);
+		return $this->verifyChain($chain_path, $ca_path);
 	}
 
 	public function jsonSerialize(): mixed

@@ -30,9 +30,10 @@
 
 namespace SSLCertificate;
 
+use \Bootstrap\Skeleton;
 use \NginxConfig\ConfigFile;
 
-class Discovery extends Bootstrap
+class Discovery extends Skeleton
 {
 	use ErrorMessages, DirectoryPath, FilePath;
 
@@ -77,8 +78,8 @@ class Discovery extends Bootstrap
 		if (false === $iterator) {
 			return false;
 		}
-		foreach ($iterator as $file_info) {
-			$config_file = new ConfigFile($file_info->getPathname());
+		foreach ($iterator as $fileinfo) {
+			$config_file = new ConfigFile($fileinfo->getPathname());
 			foreach ($config_file as $server_conf) {
 				foreach ($server_conf as $server_cert) {
 					$cert = $this->createFromCertPath($server_cert['ssl_certificate'], Mode::Simple);
@@ -96,9 +97,10 @@ class Discovery extends Bootstrap
 		return true;
 	}
 
-	protected function process(array $argv): bool
+	protected function process(array $args): bool
 	{
-		$conf_dir = $this->getDefaultNginxConfDir($argv[1] ?? '');
+		$conf_dir = $args[0] ?? '';
+		$conf_dir = $this->getDefaultNginxConfDir($conf_dir);
 		return $this->discoverNginxConfDir($conf_dir);
 	}
 

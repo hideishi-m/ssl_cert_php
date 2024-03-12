@@ -29,8 +29,7 @@ function buildPhar(string $target): void
 		unlink($phar);
 	}
 	$ph = new Phar($phar);
-	$ph->buildFromDirectory(__DIR__ . '/src/', '#/include/[^/]+\.php$#');
-	$ph->addFile(__DIR__ . "/src/{$target}.php", '/index.php');
+	$ph->buildFromDirectory(__DIR__ . '/src/');
 	$ph->compressFiles(Phar::GZ);
 	$ph->setStub(createStub($target));
 	$ph->stopBuffering();

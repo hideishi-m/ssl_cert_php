@@ -30,7 +30,9 @@
 
 namespace SSLCertificate;
 
-class Checker extends Bootstrap
+use \Bootstrap\Skeleton;
+
+class Checker extends Skeleton
 {
 	use ErrorMessages, FilePath;
 
@@ -63,9 +65,10 @@ class Checker extends Bootstrap
 		return true;
 	}
 
-	protected function process(array $argv): bool
+	protected function process(array $args): bool
 	{
-		return $this->checkCertificate($argv[1] ?? '');
+		$cert_path = $args[0] ?? '';
+		return $this->checkCertificate($cert_path);
 	}
 
 	public function jsonSerialize(): mixed

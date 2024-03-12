@@ -28,8 +28,55 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace SSLCertificate;
+namespace Bootstrap;
 
-class Exception extends \Exception
+const VERSION = '1.0.0';
+
+enum ReturnCode: int
 {
+	case Success = 0;
+	case Failure = 1;
+	case Parameter = 2;
+	case Error = 255;
+}
+
+enum Command: string
+{
+	case Discovery = 'ssl_cert_discovery';
+	case Checker = 'ssl_cert_check';
+	case Verification = 'ssl_cert_verify';
+
+	public function get_class_name(): string
+	{
+		return match($this) {
+			Command::Discovery => '\\SSLCertificate\\Discovery',
+			Command::Checker => '\\SSLCertificate\\Checker',
+			Command::Verification => '\\SSLCertificate\\Verification',
+		};
+	}
+}
+
+function bootstrap()
+{
+	global $argv;
+	$args = $argv;
+	$command = array_shift($args);
+	$command = basename($command);
+	if ('index.php' === $command) {
+		$command = array_shift($args) ?? '';
+	}
+	$pos = strpos($command, '.php');
+	if (0 < $pos) {
+		$command = substr($command, 0, $pos);
+	}
+	try {
+		$command_name = Command::from($command);
+	} catch (\ValueError $e) {
+		error_log("{$command} command is not supported");
+		exit(ReturnCode::Parameter);
+	}
+	$class_name = $command_name->get_class_name();
+	$object = new $class_name();
+	$code = $object->bootstrap($args);
+	exit($code->value);
 }

@@ -28,32 +28,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace SSLCertificate;
+namespace Bootstrap;
 
-abstract class Bootstrap implements \JsonSerializable
+abstract class Skeleton implements \JsonSerializable
 {
 	final const JSON_FLAGS = JSON_UNESCAPED_SLASHES;
 
-	final public static function run(array $argv): void
+	final public function bootstrap(array $args): ReturnCode
 	{
-		$class = get_called_class();
-		$object = new $class();
-		$code = $object->bootstrap($argv);
-		exit($code);
-	}
-
-	final protected function bootstrap(array $argv): int
-	{
-		$code = 0;
 		try {
-			$code = $this->process($argv) ? 0 : 1;
-		} catch (Exception $e) {
+			$code = $this->process($args) ? ReturnCode::Success : ReturnCode::Failure;
+		} catch (\Exception $e) {
 			error_log($e);
-			$code = 255;
+			$code = ReturnCode::Error;
 		}
 		echo json_encode($this, self::JSON_FLAGS);
 		return $code;
 	}
 
-	protected abstract function process(array $argv): bool;
+	protected abstract function process(array $args): bool;
 }

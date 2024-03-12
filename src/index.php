@@ -12,6 +12,4 @@
 
 require_once __DIR__ . '/include/autoload.php';
 
-global $argv;
-//new \SSLCertificate\Discovery($argv[1] ?? '');
-\SSLCertificate\Discovery::run($argv);
+\Bootstrap\bootstrap();

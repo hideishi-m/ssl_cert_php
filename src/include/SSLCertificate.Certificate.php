@@ -115,11 +115,11 @@ class Certificate implements \JsonSerializable
 		$this->pem = $pem;
 		$x509 = openssl_x509_parse($this->pem);
 		if (false === $x509) {
-			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
+			throw new \Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->x509 = $x509;
 		$this->common_name = $this->x509['subject']['CN'] ?? '';
-		if (Mode::Default->value > $this->mode) {
+		if (Mode::Default->value > $this->mode->value) {
 			return;
 		}
 
@@ -128,13 +128,13 @@ class Certificate implements \JsonSerializable
 		$this->issuer = $this->arrayToString($this->x509['issuer']);
 		$this->not_before = intval($this->x509['validFrom_time_t']);
 		$this->not_after = intval($this->x509['validTo_time_t']);
-		if (Mode::Extended->value > $this->mode) {
+		if (Mode::Extended->value > $this->mode->value) {
 			return;
 		}
 
 		// Extended
 		if (false === openssl_x509_export($pem, $text, FALSE)) {
-			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
+			throw new \Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->text = $text;
 
@@ -145,7 +145,7 @@ class Certificate implements \JsonSerializable
 		$this->public_key_algorithm = $this->matchInLine('Public Key Algorithm', $this->text);
 
 		if (false === ($fingerprint = openssl_x509_fingerprint($pem, 'sha1'))) {
-			throw new Exception('Certificate file is not valid: ' . openssl_error_string());
+			throw new \Exception('Certificate file is not valid: ' . openssl_error_string());
 		}
 		$this->sha1_fingerprint = preg_replace('#(..)(?=..)#', '$1:', $fingerprint);
 	}
@@ -197,7 +197,7 @@ class Certificate implements \JsonSerializable
 			'common_name' => $this->common_name,
 			# 'raw' => $this->x509,
 		];
-		if (Mode::Default->value > $this->mode) {
+		if (Mode::Default->value > $this->mode->value) {
 			return $json;
 		}
 
@@ -216,7 +216,7 @@ class Certificate implements \JsonSerializable
 		] as $key => $value) {
 			$json[$key] = $value;
 		}
-		if (Mode::Extended->value > $this->mode) {
+		if (Mode::Extended->value > $this->mode->value) {
 			return $json;
 		}
 
