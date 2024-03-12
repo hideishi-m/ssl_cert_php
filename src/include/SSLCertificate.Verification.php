@@ -48,7 +48,7 @@ class Verification extends Skeleton
 		}
 	}
 
-	protected function createFromCertPath(string $path): false|Collection
+	protected function createFromCertsPath(string $path): false|Collection
 	{
 		$text = $this->readTextFromFilePath($path);
 		if (false === $text) {
@@ -59,8 +59,9 @@ class Verification extends Skeleton
 
 	protected function verifyChain(string $chain_path, string $ca_path): bool
 	{
-		$chain_certs = $this->createFromCertPath($chain_path);
-		if (false === $chain_certs) {
+		$chain_certs = $this->createFromCertsPath($chain_path);
+		if (false === $chain_certs
+			|| 0 === count($chain_certs)) {
 			return false;
 		}
 
@@ -85,8 +86,9 @@ class Verification extends Skeleton
 			];
 		}
 
-		$ca_certs = $this->createFromCertPath($ca_path);
-		if (false === $ca_certs) {
+		$ca_certs = $this->createFromCertsPath($ca_path);
+		if (false === $ca_certs
+			|| 0 === count($chain_certs)) {
 			return false;
 		}
 
