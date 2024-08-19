@@ -34,8 +34,6 @@ class Collection implements \Countable, \IteratorAggregate, \JsonSerializable
 {
 	use ErrorMessages;
 
-	protected int $position;
-
 	protected array $pems = [];
 	protected array $certs = [];
 
@@ -52,7 +50,6 @@ class Collection implements \Countable, \IteratorAggregate, \JsonSerializable
 
 	public function __construct(string $pem, $mode = Mode::Default)
 	{
-		$this->position = 0;
 		if (false === preg_match_all('#-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----#s', $pem, $matches)) {
 			$this->messages[] = 'Certificate file is not valid';
 		} else {

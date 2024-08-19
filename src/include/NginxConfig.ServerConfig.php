@@ -39,8 +39,6 @@ class ServerConfig implements \Countable, \IteratorAggregate, \JsonSerializable
 	final const SSL_CERT_KEY_PATTERN = '/^\s*ssl_certificate_key\s+([^\s;]+)\s*;/';
 	final const INCLUDE_PATTERN = '/^\s*include\s+([^\s;]+)\s*;/';
 
-	protected int $position;
-
 	protected array $block;
 	protected string $root_dir;
 
