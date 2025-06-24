@@ -88,6 +88,8 @@ class ConfigFile implements \Countable, \IteratorAggregate
 
 	public function getIterator(): \Traversable
 	{
-		return new \ArrayIterator($this->server_configs);
+		foreach ($this->server_configs as $server_config) {
+			yield $server_config;
+		}
 	}
 }

@@ -148,7 +148,9 @@ class ServerConfig implements \Countable, \IteratorAggregate, \JsonSerializable
 
 	public function getIterator(): \Traversable
 	{
-		return new \ArrayIterator($this->server_certs);
+		foreach ($this->server_certs as $server_cert) {
+			yield $server_cert;
+		}
 	}
 
 	public function jsonSerialize(): mixed
