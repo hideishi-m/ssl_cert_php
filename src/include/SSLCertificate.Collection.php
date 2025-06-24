@@ -65,7 +65,7 @@ class Collection implements \Countable, \IteratorAggregate, \JsonSerializable
 		return count($this->certs);
 	}
 
-	public function getIterator(): \Iterator
+	public function getIterator(): \Traversable
 	{
 		foreach ($this->certs as $cert) {
 			yield $cert;
