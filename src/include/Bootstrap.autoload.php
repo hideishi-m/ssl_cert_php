@@ -73,7 +73,7 @@ function bootstrap()
 		$command_name = Command::from($command);
 	} catch (\ValueError $e) {
 		error_log("{$command} command is not supported");
-		exit(ReturnCode::Parameter);
+		exit(ReturnCode::Parameter->value);
 	}
 	$class_name = $command_name->get_class_name();
 	$object = new $class_name();
